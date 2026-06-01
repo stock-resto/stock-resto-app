@@ -16,6 +16,7 @@ export const ICON_PATHS = {
   plus: 'M12 5v14M5 12h14',
   logout: 'M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9',
   x: 'M18 6L6 18M6 6l12 12',
+  edit: 'M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z',
 } as const
 
 export type IconName = keyof typeof ICON_PATHS

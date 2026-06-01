@@ -1,9 +1,10 @@
 'use client'
 
-import { useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import { Icon } from '@/components/icon'
 import { money } from '@/lib/format'
 import type { Produit } from '@/types/database'
+import { ProductoModal } from './producto-modal'
 
 export type ProduitRow = Produit & {
   categories: { nom: string } | null
@@ -11,6 +12,7 @@ export type ProduitRow = Produit & {
 }
 
 type StockStatus = 'ok' | 'low' | 'out'
+type ModalMode = 'closed' | 'create' | 'edit'
 
 function stockStatus(p: ProduitRow): StockStatus {
   if (p.stock_actuel <= 0) return 'out'
@@ -27,14 +29,34 @@ const STATUS = {
 export function StockTable({
   produits,
   categories,
+  fournisseurs,
   canSeeFinance,
+  canEdit,
+  canDeactivate,
 }: {
   produits: ProduitRow[]
   categories: { id: string; nom: string }[]
+  fournisseurs: { id: string; nom: string }[]
   canSeeFinance: boolean
+  canEdit: boolean
+  canDeactivate: boolean
 }) {
   const [query, setQuery] = useState('')
   const [cat, setCat] = useState<string>('all')
+  const [modalMode, setModalMode] = useState<ModalMode>('closed')
+  const [editingProduit, setEditingProduit] = useState<ProduitRow | null>(null)
+
+  const handleClose = useCallback(() => {
+    setModalMode('closed')
+    setEditingProduit(null)
+  }, [])
+
+  const openCreate = useCallback(() => setModalMode('create'), [])
+
+  const openEdit = useCallback((p: ProduitRow) => {
+    setEditingProduit(p)
+    setModalMode('edit')
+  }, [])
 
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase()
@@ -46,139 +68,178 @@ export function StockTable({
   }, [produits, query, cat])
 
   const lowCount = produits.filter((p) => stockStatus(p) !== 'ok').length
-  const totalValue = produits.reduce(
-    (s, p) => s + p.stock_actuel * p.valeur_unitaire,
-    0
-  )
+  const totalValue = produits.reduce((s, p) => s + p.stock_actuel * p.valeur_unitaire, 0)
 
   return (
-    <div className="mx-auto flex max-w-[1180px] flex-col gap-[18px] px-5 py-7 md:px-8">
-      {/* En-tête */}
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-[25px] font-bold tracking-tight">Inventario</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            Estado del stock en tiempo real
-          </p>
-        </div>
-        <button
-          type="button"
-          disabled
-          title="Próximamente"
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground opacity-60 shadow-sm"
-        >
-          <Icon name="plus" size={17} />
-          Nuevo producto
-        </button>
-      </div>
-
-      {/* Stat cards */}
-      <div className="grid grid-cols-2 gap-3.5 md:grid-cols-3">
-        <StatCard icon="box" tone="neutral" label="Productos" value={String(produits.length)} foot="artículos" />
-        <StatCard
-          icon="alert"
-          tone={lowCount ? 'warn' : 'ok'}
-          label="Productos en alerta"
-          value={String(lowCount)}
-          foot="alertas de stock"
-        />
-        {canSeeFinance && (
-          <StatCard icon="trend" tone="accent" label="Valor del stock" value={money(totalValue)} />
-        )}
-      </div>
-
-      {/* Toolbar */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex h-10 min-w-[200px] max-w-[340px] flex-1 items-center gap-2.5 rounded-lg border border-border bg-card px-3">
-          <Icon name="search" size={17} className="text-muted-foreground/70" />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Buscar…"
-            className="w-full bg-transparent text-sm outline-none"
-          />
-        </div>
-        <div className="flex gap-1 overflow-x-auto pb-0.5">
-          <Seg active={cat === 'all'} onClick={() => setCat('all')}>
-            Todas
-          </Seg>
-          {categories.map((c) => (
-            <Seg key={c.id} active={cat === c.id} onClick={() => setCat(c.id)}>
-              {c.nom}
-            </Seg>
-          ))}
-        </div>
-      </div>
-
-      {/* Tableau */}
-      <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
-        <div className="overflow-x-auto">
-          <table className="w-full border-collapse text-sm">
-            <thead>
-              <tr>
-                <Th>Producto</Th>
-                <Th>Proveedor</Th>
-                <Th>Presentación</Th>
-                {canSeeFinance && <Th align="right">Precio unit.</Th>}
-                <Th className="w-[200px]">En stock</Th>
-                <Th>Estado</Th>
-              </tr>
-            </thead>
-            <tbody>
-              {filtered.map((p) => {
-                const status = stockStatus(p)
-                return (
-                  <tr key={p.id} className="border-b border-border transition last:border-0 hover:bg-secondary">
-                    <td className="px-[18px] py-3">
-                      <div className="flex items-center gap-2.5">
-                        <span className="font-semibold">{p.nom}</span>
-                        {p.categories?.nom && (
-                          <span className="rounded-md border border-border bg-secondary px-1.5 py-0.5 text-[11px] text-muted-foreground">
-                            {p.categories.nom}
-                          </span>
-                        )}
-                      </div>
-                    </td>
-                    <td className="px-[18px] py-3 text-muted-foreground">
-                      {p.fournisseurs?.nom ?? '—'}
-                    </td>
-                    <td className="px-[18px] py-3 text-muted-foreground">
-                      {p.presentation ? `${p.presentation} · ` : ''}
-                      <span className="font-mono">{p.unite}</span>
-                    </td>
-                    {canSeeFinance && (
-                      <td className="px-[18px] py-3 text-right font-mono">
-                        {money(p.valeur_unitaire)}
-                      </td>
-                    )}
-                    <td className="px-[18px] py-3">
-                      <div className="flex items-center gap-3">
-                        <span className="min-w-[52px] font-mono text-[13.5px] font-semibold">
-                          {p.stock_actuel}
-                          <em className="ml-0.5 not-italic text-[11px] text-muted-foreground/70">
-                            {p.unite}
-                          </em>
-                        </span>
-                        <StockBar p={p} status={status} />
-                      </div>
-                    </td>
-                    <td className="px-[18px] py-3">
-                      <StatusBadge status={status} />
-                    </td>
-                  </tr>
-                )
-              })}
-            </tbody>
-          </table>
-        </div>
-        {filtered.length === 0 && (
-          <div className="flex flex-col items-center gap-2.5 px-5 py-12 text-muted-foreground/70">
-            <Icon name="box" size={28} />
-            <span className="text-sm">Sin resultados</span>
+    <>
+      <div className="mx-auto flex max-w-[1180px] flex-col gap-[18px] px-5 py-7 md:px-8">
+        {/* En-tête */}
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <h1 className="text-[25px] font-bold tracking-tight">Inventario</h1>
+            <p className="mt-1 text-sm text-muted-foreground">Estado del stock en tiempo real</p>
           </div>
-        )}
+          {canEdit && (
+            <button
+              type="button"
+              onClick={openCreate}
+              className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90"
+            >
+              <Icon name="plus" size={17} />
+              Nuevo producto
+            </button>
+          )}
+        </div>
+
+        {/* Stat cards */}
+        <div className="grid grid-cols-2 gap-3.5 md:grid-cols-3">
+          <StatCard
+            icon="box"
+            tone="neutral"
+            label="Productos"
+            value={String(produits.length)}
+            foot="artículos"
+          />
+          <StatCard
+            icon="alert"
+            tone={lowCount ? 'warn' : 'ok'}
+            label="Productos en alerta"
+            value={String(lowCount)}
+            foot="alertas de stock"
+          />
+          {canSeeFinance && (
+            <StatCard
+              icon="trend"
+              tone="accent"
+              label="Valor del stock"
+              value={money(totalValue)}
+            />
+          )}
+        </div>
+
+        {/* Toolbar */}
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="flex h-10 min-w-[200px] max-w-[340px] flex-1 items-center gap-2.5 rounded-lg border border-border bg-card px-3">
+            <Icon name="search" size={17} className="text-muted-foreground/70" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Buscar…"
+              className="w-full bg-transparent text-sm outline-none"
+            />
+          </div>
+          <div className="flex gap-1 overflow-x-auto pb-0.5">
+            <Seg active={cat === 'all'} onClick={() => setCat('all')}>
+              Todas
+            </Seg>
+            {categories.map((c) => (
+              <Seg key={c.id} active={cat === c.id} onClick={() => setCat(c.id)}>
+                {c.nom}
+              </Seg>
+            ))}
+          </div>
+        </div>
+
+        {/* Tableau */}
+        <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full border-collapse text-sm">
+              <thead>
+                <tr>
+                  <Th>Producto</Th>
+                  <Th>Proveedor</Th>
+                  <Th>Presentación</Th>
+                  {canSeeFinance && <Th align="right">Precio unit.</Th>}
+                  <Th className="w-[200px]">En stock</Th>
+                  <Th>Estado</Th>
+                  {canEdit && <Th className="w-10" />}
+                </tr>
+              </thead>
+              <tbody>
+                {filtered.map((p) => {
+                  const status = stockStatus(p)
+                  return (
+                    <tr
+                      key={p.id}
+                      className="group border-b border-border transition last:border-0 hover:bg-secondary"
+                    >
+                      <td className="px-[18px] py-3">
+                        <div className="flex items-center gap-2.5">
+                          <span className="font-semibold">{p.nom}</span>
+                          {p.categories?.nom && (
+                            <span className="rounded-md border border-border bg-secondary px-1.5 py-0.5 text-[11px] text-muted-foreground">
+                              {p.categories.nom}
+                            </span>
+                          )}
+                        </div>
+                      </td>
+                      <td className="px-[18px] py-3 text-muted-foreground">
+                        {p.fournisseurs?.nom ?? '—'}
+                      </td>
+                      <td className="px-[18px] py-3 text-muted-foreground">
+                        {p.presentation ? `${p.presentation} · ` : ''}
+                        <span className="font-mono">{p.unite}</span>
+                      </td>
+                      {canSeeFinance && (
+                        <td className="px-[18px] py-3 text-right font-mono">
+                          {money(p.valeur_unitaire)}
+                        </td>
+                      )}
+                      <td className="px-[18px] py-3">
+                        <div className="flex items-center gap-3">
+                          <span className="min-w-[52px] font-mono text-[13.5px] font-semibold">
+                            {p.stock_actuel}
+                            <em className="ml-0.5 not-italic text-[11px] text-muted-foreground/70">
+                              {p.unite}
+                            </em>
+                          </span>
+                          <StockBar p={p} status={status} />
+                        </div>
+                      </td>
+                      <td className="px-[18px] py-3">
+                        <StatusBadge status={status} />
+                      </td>
+                      {canEdit && (
+                        <td className="px-3 py-3">
+                          <button
+                            type="button"
+                            onClick={() => openEdit(p)}
+                            className="grid size-7 place-items-center rounded-md text-muted-foreground opacity-0 transition hover:bg-secondary hover:text-foreground group-hover:opacity-100"
+                            aria-label={`Editar ${p.nom}`}
+                          >
+                            <Icon name="edit" size={14} />
+                          </button>
+                        </td>
+                      )}
+                    </tr>
+                  )
+                })}
+              </tbody>
+            </table>
+          </div>
+          {filtered.length === 0 && (
+            <div className="flex flex-col items-center gap-2.5 px-5 py-12 text-muted-foreground/70">
+              <Icon name="box" size={28} />
+              <span className="text-sm">Sin resultados</span>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+
+      {/* Modal */}
+      {modalMode !== 'closed' && (
+        <ProductoModal
+          key={`${modalMode}-${editingProduit?.id ?? 'new'}`}
+          mode={modalMode}
+          produit={editingProduit}
+          categories={categories}
+          fournisseurs={fournisseurs}
+          canSeeFinance={canSeeFinance}
+          canDeactivate={canDeactivate}
+          onClose={handleClose}
+        />
+      )}
+    </>
   )
 }
 
@@ -187,7 +248,7 @@ function Th({
   align = 'left',
   className = '',
 }: {
-  children: React.ReactNode
+  children?: React.ReactNode
   align?: 'left' | 'right'
   className?: string
 }) {
