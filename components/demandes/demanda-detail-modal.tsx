@@ -17,6 +17,7 @@ type Props = {
   demande: DemandeRow
   role: Role
   onClose: () => void
+  onEdit?: () => void
 }
 
 const INIT: DemandaState = {}
@@ -28,7 +29,7 @@ const STATUT = {
   livree:     { label: 'Entregada', cls: 'text-[var(--ok)] bg-[color-mix(in_oklch,var(--ok)_13%,transparent)]' },
 } as const
 
-export function DemandaDetailModal({ demande, role, onClose }: Props) {
+export function DemandaDetailModal({ demande, role, onClose, onEdit }: Props) {
   const [aprobarState, aprobarAction, aprobarPending] = useActionState(aprobarDemanda, INIT)
   const [rechazarState, rechazarAction, rechazarPending] = useActionState(rechazarDemanda, INIT)
   const [entregarState, entregarAction, entregarPending] = useActionState(entregarDemanda, INIT)
@@ -209,6 +210,19 @@ export function DemandaDetailModal({ demande, role, onClose }: Props) {
           <p className="shrink-0 border-t border-border px-5 py-2 text-[13px] text-destructive">
             {error}
           </p>
+        )}
+
+        {/* Editar (patron, en espera) */}
+        {demande.statut === 'en_attente' && role === 'patron' && onEdit && (
+          <div className="shrink-0 border-t border-border px-5 py-3">
+            <button
+              type="button"
+              onClick={onEdit}
+              className="text-[13px] font-medium text-primary hover:underline"
+            >
+              Editar solicitud
+            </button>
+          </div>
         )}
 
         {/* En espera → Aprobar / Rechazar */}

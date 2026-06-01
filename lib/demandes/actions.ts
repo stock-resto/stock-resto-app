@@ -53,6 +53,57 @@ export async function crearDemanda(
   return { success: true }
 }
 
+export async function editarDemanda(
+  _prev: DemandaState,
+  formData: FormData
+): Promise<DemandaState> {
+  const profile = await getProfile()
+  if (!profile) return { error: 'No autenticado.' }
+  if (profile.role !== 'patron') return { error: 'Solo el dueño puede editar solicitudes.' }
+
+  const id = String(formData.get('id') ?? '').trim()
+  const note = (formData.get('note') as string) || null
+
+  let lignes: { produit_id: string; quantite: number }[] = []
+  try {
+    lignes = JSON.parse((formData.get('lignes') as string) || '[]')
+  } catch {
+    return { error: 'Datos inválidos.' }
+  }
+
+  const valid = lignes.filter((l) => l.produit_id && l.quantite > 0)
+  if (valid.length === 0) return { error: 'Agrega al menos un producto.' }
+
+  const supabase = await createClient()
+
+  const { error: noteError } = await supabase
+    .from('demandes')
+    .update({ note })
+    .eq('id', id)
+    .eq('restaurant_id', profile.restaurant_id)
+    .eq('statut', 'en_attente')
+  if (noteError) return { error: 'Error al actualizar la solicitud.' }
+
+  // Reemplazar las líneas: borrar las existentes e insertar las nuevas
+  const { error: deleteError } = await supabase
+    .from('demande_lignes')
+    .delete()
+    .eq('demande_id', id)
+  if (deleteError) return { error: 'Error al actualizar los productos.' }
+
+  const { error: insertError } = await supabase.from('demande_lignes').insert(
+    valid.map((l) => ({
+      demande_id: id,
+      produit_id: l.produit_id,
+      quantite: l.quantite,
+    }))
+  )
+  if (insertError) return { error: 'Error al guardar los productos.' }
+
+  revalidatePath('/demandes')
+  return { success: true }
+}
+
 export async function aprobarDemanda(
   _prev: DemandaState,
   formData: FormData

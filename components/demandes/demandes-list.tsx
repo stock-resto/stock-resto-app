@@ -5,6 +5,7 @@ import { Icon } from '@/components/icon'
 import { dateTime } from '@/lib/format'
 import { NuevaSolicitudModal } from './nueva-solicitud-modal'
 import { DemandaDetailModal } from './demanda-detail-modal'
+import { EditarDemandaModal } from './editar-demanda-modal'
 import type { ProductoOption } from '@/components/stock/entrada-modal'
 import type { Role } from '@/types/database'
 
@@ -50,9 +51,15 @@ export function DemandesList({
   const [filtro, setFiltro] = useState<Filtro>('all')
   const [newOpen, setNewOpen] = useState(false)
   const [selected, setSelected] = useState<DemandeRow | null>(null)
+  const [editing, setEditing] = useState<DemandeRow | null>(null)
 
   const handleCloseNew = useCallback(() => setNewOpen(false), [])
   const handleCloseDetail = useCallback(() => setSelected(null), [])
+  const handleCloseEdit = useCallback(() => setEditing(null), [])
+  const handleEdit = useCallback((d: DemandeRow) => {
+    setSelected(null)
+    setEditing(d)
+  }, [])
 
   const counts = useMemo(
     () => ({
@@ -69,7 +76,7 @@ export function DemandesList({
     [demandes, filtro]
   )
 
-  const canCreate = role === 'cuisinier'
+  const canCreate = role === 'cuisinier' || role === 'patron'
   const pendientes = counts.en_attente
 
   return (
@@ -196,6 +203,15 @@ export function DemandesList({
           demande={selected}
           role={role}
           onClose={handleCloseDetail}
+          onEdit={role === 'patron' ? () => handleEdit(selected) : undefined}
+        />
+      )}
+      {editing && (
+        <EditarDemandaModal
+          key={`edit-${editing.id}`}
+          demande={editing}
+          produits={produits}
+          onClose={handleCloseEdit}
         />
       )}
     </>
