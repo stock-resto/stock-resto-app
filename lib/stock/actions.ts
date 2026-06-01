@@ -152,3 +152,103 @@ export async function registrarSortida(
   revalidatePath('/stock')
   return { success: true }
 }
+
+export async function editarMovimiento(
+  _prev: ProductoState,
+  formData: FormData
+): Promise<ProductoState> {
+  const profile = await getProfile()
+  if (!profile) return { error: 'No autenticado.' }
+  if (profile.role !== 'patron') return { error: 'Solo el dueño puede corregir movimientos.' }
+
+  const id = String(formData.get('id') ?? '').trim()
+  const produit_id = String(formData.get('produit_id') ?? '').trim()
+  const type = String(formData.get('type') ?? '')
+  const oldQuantite = Number(formData.get('old_quantite'))
+  const newQuantite = Number(formData.get('quantite'))
+  const notes = (formData.get('notes') as string) || null
+
+  if (!id || !produit_id) return { error: 'Datos inválidos.' }
+  if (!newQuantite || newQuantite <= 0) return { error: 'La cantidad debe ser mayor a 0.' }
+
+  const supabase = await createClient()
+
+  const { error: updateError } = await supabase
+    .from('mouvements')
+    .update({ quantite: newQuantite, notes })
+    .eq('id', id)
+    .eq('restaurant_id', profile.restaurant_id)
+  if (updateError) return { error: 'Error al actualizar el movimiento.' }
+
+  // Ajuste del stock según el delta
+  const delta = newQuantite - oldQuantite
+  if (delta !== 0) {
+    const { data: prod } = await supabase
+      .from('produits')
+      .select('stock_actuel')
+      .eq('id', produit_id)
+      .eq('restaurant_id', profile.restaurant_id)
+      .single()
+
+    if (prod) {
+      const ajuste = type === 'entree' ? delta : -delta
+      await supabase
+        .from('produits')
+        .update({ stock_actuel: prod.stock_actuel + ajuste })
+        .eq('id', produit_id)
+        .eq('restaurant_id', profile.restaurant_id)
+    }
+  }
+
+  revalidatePath('/entrees')
+  revalidatePath('/sorties')
+  revalidatePath('/stock')
+  return { success: true }
+}
+
+export async function eliminarMovimiento(
+  _prev: ProductoState,
+  formData: FormData
+): Promise<ProductoState> {
+  const profile = await getProfile()
+  if (!profile) return { error: 'No autenticado.' }
+  if (profile.role !== 'patron') return { error: 'Solo el dueño puede eliminar movimientos.' }
+
+  const id = String(formData.get('id') ?? '').trim()
+  const produit_id = String(formData.get('produit_id') ?? '').trim()
+  const type = String(formData.get('type') ?? '')
+  const quantite = Number(formData.get('quantite'))
+
+  if (!id || !produit_id) return { error: 'Datos inválidos.' }
+
+  const supabase = await createClient()
+
+  const { error: deleteError } = await supabase
+    .from('mouvements')
+    .delete()
+    .eq('id', id)
+    .eq('restaurant_id', profile.restaurant_id)
+  if (deleteError) return { error: 'Error al eliminar el movimiento.' }
+
+  // Revertir el efecto en el stock
+  const { data: prod } = await supabase
+    .from('produits')
+    .select('stock_actuel')
+    .eq('id', produit_id)
+    .eq('restaurant_id', profile.restaurant_id)
+    .single()
+
+  if (prod) {
+    const ajuste = type === 'entree' ? -quantite : quantite
+    await supabase
+      .from('produits')
+      .update({ stock_actuel: prod.stock_actuel + ajuste })
+      .eq('id', produit_id)
+      .eq('restaurant_id', profile.restaurant_id)
+  }
+
+  revalidatePath('/entrees')
+  revalidatePath('/sorties')
+  revalidatePath('/stock')
+  return { success: true }
+}

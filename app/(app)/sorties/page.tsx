@@ -8,11 +8,12 @@ export default async function SortiesPage() {
   const profile = await getProfile()
 
   const canEdit = profile?.role !== 'cuisinier'
+  const canPatron = profile?.role === 'patron'
 
   const [{ data: mouvements }, { data: produits }] = await Promise.all([
     supabase
       .from('mouvements')
-      .select('id, quantite, notes, created_at, produits(nom, unite), users(nom)')
+      .select('id, produit_id, type, quantite, notes, created_at, produits(nom, unite), users(nom)')
       .eq('type', 'sortie')
       .order('created_at', { ascending: false })
       .limit(50),
@@ -28,6 +29,7 @@ export default async function SortiesPage() {
       mouvements={(mouvements ?? []) as unknown as SortieMouvementRow[]}
       produits={(produits ?? []) as ProductoOption[]}
       canEdit={canEdit}
+      canPatron={canPatron}
     />
   )
 }

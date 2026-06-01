@@ -4,14 +4,11 @@ import { useCallback, useState } from 'react'
 import { Icon } from '@/components/icon'
 import { dateTime } from '@/lib/format'
 import { SortieModal } from './sortie-modal'
+import { MovimientoEditModal, type MovimientoEditable } from './movimiento-edit-modal'
 import type { ProductoOption } from './entrada-modal'
 
-export type SortieMouvementRow = {
-  id: string
-  quantite: number
-  notes: string | null
+export type SortieMouvementRow = MovimientoEditable & {
   created_at: string
-  produits: { nom: string; unite: string } | null
   users: { nom: string } | null
 }
 
@@ -19,18 +16,22 @@ export function SortiesList({
   mouvements,
   produits,
   canEdit,
+  canPatron,
 }: {
   mouvements: SortieMouvementRow[]
   produits: ProductoOption[]
   canEdit: boolean
+  canPatron: boolean
 }) {
   const [modalOpen, setModalOpen] = useState(false)
+  const [editing, setEditing] = useState<SortieMouvementRow | null>(null)
+
   const handleClose = useCallback(() => setModalOpen(false), [])
+  const handleCloseEdit = useCallback(() => setEditing(null), [])
 
   return (
     <>
       <div className="mx-auto flex max-w-[1180px] flex-col gap-[18px] px-5 py-7 md:px-8">
-        {/* En-tête */}
         <div className="flex items-start justify-between gap-4">
           <div>
             <h1 className="text-[25px] font-bold tracking-tight">Salidas de stock</h1>
@@ -44,13 +45,12 @@ export function SortiesList({
               onClick={() => setModalOpen(true)}
               className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90"
             >
-              <Icon name="arrowUp" size={17} />
+              <Icon name="plus" size={17} />
               Nueva salida
             </button>
           )}
         </div>
 
-        {/* Tabla */}
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
           {mouvements.length === 0 ? (
             <div className="flex flex-col items-center gap-2.5 px-5 py-16 text-muted-foreground/70">
@@ -67,13 +67,14 @@ export function SortiesList({
                     <Th align="right">Cantidad</Th>
                     <Th>Registrado por</Th>
                     <Th>Nota</Th>
+                    {canPatron && <Th className="w-10" />}
                   </tr>
                 </thead>
                 <tbody>
                   {mouvements.map((m) => (
                     <tr
                       key={m.id}
-                      className="border-b border-border last:border-0 hover:bg-secondary"
+                      className="group border-b border-border last:border-0 hover:bg-secondary"
                     >
                       <td className="whitespace-nowrap px-[18px] py-3 text-[13px] text-muted-foreground">
                         {dateTime(m.created_at)}
@@ -93,6 +94,18 @@ export function SortiesList({
                       <td className="max-w-[220px] truncate px-[18px] py-3 text-[13px] text-muted-foreground">
                         {m.notes ?? '—'}
                       </td>
+                      {canPatron && (
+                        <td className="px-3 py-3">
+                          <button
+                            type="button"
+                            onClick={() => setEditing(m)}
+                            className="grid size-7 place-items-center rounded-md text-muted-foreground opacity-0 transition hover:bg-secondary hover:text-foreground group-hover:opacity-100"
+                            aria-label="Corregir movimiento"
+                          >
+                            <Icon name="edit" size={14} />
+                          </button>
+                        </td>
+                      )}
                     </tr>
                   ))}
                 </tbody>
@@ -105,6 +118,13 @@ export function SortiesList({
       {modalOpen && (
         <SortieModal key="sortie-modal" produits={produits} onClose={handleClose} />
       )}
+      {editing && (
+        <MovimientoEditModal
+          key={`edit-${editing.id}`}
+          mouvement={editing}
+          onClose={handleCloseEdit}
+        />
+      )}
     </>
   )
 }
@@ -112,15 +132,18 @@ export function SortiesList({
 function Th({
   children,
   align = 'left',
+  className = '',
 }: {
   children?: React.ReactNode
   align?: 'left' | 'right'
+  className?: string
 }) {
   return (
     <th
       className={
         'border-b border-border px-[18px] py-3 text-[11.5px] font-semibold uppercase tracking-wide text-muted-foreground/70 ' +
-        (align === 'right' ? 'text-right' : 'text-left')
+        (align === 'right' ? 'text-right ' : 'text-left ') +
+        className
       }
     >
       {children}

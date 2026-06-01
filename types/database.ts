@@ -159,6 +159,7 @@ export interface Database {
           created_at?: string
         }
         Update: {
+          quantite?: number
           notes?: string | null
         }
         Relationships: []
