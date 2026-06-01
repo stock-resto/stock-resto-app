@@ -104,21 +104,7 @@ export async function registrarEntrada(
   })
   if (mvtError) return { error: 'Error al registrar la entrada.' }
 
-  // Leer stock actual y actualizar (MVP — concurrencia baja)
-  const { data: prod } = await supabase
-    .from('produits')
-    .select('stock_actuel')
-    .eq('id', produit_id)
-    .eq('restaurant_id', profile.restaurant_id)
-    .single()
-
-  if (prod) {
-    await supabase
-      .from('produits')
-      .update({ stock_actuel: prod.stock_actuel + quantite })
-      .eq('id', produit_id)
-      .eq('restaurant_id', profile.restaurant_id)
-  }
+  // Le trigger on_mouvement_insert gère la mise à jour de stock_actuel
 
   revalidatePath('/entrees')
   revalidatePath('/stock')
@@ -152,20 +138,7 @@ export async function registrarSortida(
   })
   if (mvtError) return { error: 'Error al registrar la salida.' }
 
-  const { data: prod } = await supabase
-    .from('produits')
-    .select('stock_actuel')
-    .eq('id', produit_id)
-    .eq('restaurant_id', profile.restaurant_id)
-    .single()
-
-  if (prod) {
-    await supabase
-      .from('produits')
-      .update({ stock_actuel: prod.stock_actuel - quantite })
-      .eq('id', produit_id)
-      .eq('restaurant_id', profile.restaurant_id)
-  }
+  // Le trigger on_mouvement_insert gère la mise à jour de stock_actuel
 
   revalidatePath('/sorties')
   revalidatePath('/stock')
