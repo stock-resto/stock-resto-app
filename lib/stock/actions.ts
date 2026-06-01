@@ -76,3 +76,51 @@ export async function desactivarProducto(
   revalidatePath('/stock')
   return { success: true }
 }
+
+export async function registrarEntrada(
+  _prev: ProductoState,
+  formData: FormData
+): Promise<ProductoState> {
+  const profile = await getProfile()
+  if (!profile) return { error: 'No autenticado.' }
+  if (profile.role === 'cuisinier') return { error: 'Sin permiso.' }
+
+  const produit_id = String(formData.get('produit_id') ?? '').trim()
+  const quantite = Number(formData.get('quantite'))
+  const notes = (formData.get('notes') as string) || null
+
+  if (!produit_id) return { error: 'Selecciona un producto.' }
+  if (!quantite || quantite <= 0) return { error: 'La cantidad debe ser mayor a 0.' }
+
+  const supabase = await createClient()
+
+  const { error: mvtError } = await supabase.from('mouvements').insert({
+    restaurant_id: profile.restaurant_id,
+    produit_id,
+    user_id: profile.id,
+    type: 'entree',
+    quantite,
+    notes,
+  })
+  if (mvtError) return { error: 'Error al registrar la entrada.' }
+
+  // Leer stock actual y actualizar (MVP — concurrencia baja)
+  const { data: prod } = await supabase
+    .from('produits')
+    .select('stock_actuel')
+    .eq('id', produit_id)
+    .eq('restaurant_id', profile.restaurant_id)
+    .single()
+
+  if (prod) {
+    await supabase
+      .from('produits')
+      .update({ stock_actuel: prod.stock_actuel + quantite })
+      .eq('id', produit_id)
+      .eq('restaurant_id', profile.restaurant_id)
+  }
+
+  revalidatePath('/entrees')
+  revalidatePath('/stock')
+  return { success: true }
+}
