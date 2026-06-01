@@ -85,26 +85,30 @@ export async function registrarEntrada(
   if (!profile) return { error: 'No autenticado.' }
   if (profile.role === 'cuisinier') return { error: 'Sin permiso.' }
 
-  const produit_id = String(formData.get('produit_id') ?? '').trim()
-  const quantite = Number(formData.get('quantite'))
   const notes = (formData.get('notes') as string) || null
 
-  if (!produit_id) return { error: 'Selecciona un producto.' }
-  if (!quantite || quantite <= 0) return { error: 'La cantidad debe ser mayor a 0.' }
+  let lignes: { produit_id: string; quantite: number }[] = []
+  try {
+    lignes = JSON.parse((formData.get('lignes') as string) || '[]')
+  } catch {
+    return { error: 'Datos inválidos.' }
+  }
+
+  const valid = lignes.filter((l) => l.produit_id && l.quantite > 0)
+  if (valid.length === 0) return { error: 'Ingresa al menos una cantidad.' }
 
   const supabase = await createClient()
-
-  const { error: mvtError } = await supabase.from('mouvements').insert({
-    restaurant_id: profile.restaurant_id,
-    produit_id,
-    user_id: profile.id,
-    type: 'entree',
-    quantite,
-    notes,
-  })
-  if (mvtError) return { error: 'Error al registrar la entrada.' }
-
-  // Le trigger on_mouvement_insert gère la mise à jour de stock_actuel
+  const { error } = await supabase.from('mouvements').insert(
+    valid.map((l) => ({
+      restaurant_id: profile.restaurant_id,
+      produit_id: l.produit_id,
+      user_id: profile.id,
+      type: 'entree',
+      quantite: l.quantite,
+      notes,
+    }))
+  )
+  if (error) return { error: 'Error al registrar las entradas.' }
 
   revalidatePath('/entrees')
   revalidatePath('/stock')
@@ -119,26 +123,30 @@ export async function registrarSortida(
   if (!profile) return { error: 'No autenticado.' }
   if (profile.role === 'cuisinier') return { error: 'Sin permiso.' }
 
-  const produit_id = String(formData.get('produit_id') ?? '').trim()
-  const quantite = Number(formData.get('quantite'))
   const notes = (formData.get('notes') as string) || null
 
-  if (!produit_id) return { error: 'Selecciona un producto.' }
-  if (!quantite || quantite <= 0) return { error: 'La cantidad debe ser mayor a 0.' }
+  let lignes: { produit_id: string; quantite: number }[] = []
+  try {
+    lignes = JSON.parse((formData.get('lignes') as string) || '[]')
+  } catch {
+    return { error: 'Datos inválidos.' }
+  }
+
+  const valid = lignes.filter((l) => l.produit_id && l.quantite > 0)
+  if (valid.length === 0) return { error: 'Ingresa al menos una cantidad.' }
 
   const supabase = await createClient()
-
-  const { error: mvtError } = await supabase.from('mouvements').insert({
-    restaurant_id: profile.restaurant_id,
-    produit_id,
-    user_id: profile.id,
-    type: 'sortie',
-    quantite,
-    notes,
-  })
-  if (mvtError) return { error: 'Error al registrar la salida.' }
-
-  // Le trigger on_mouvement_insert gère la mise à jour de stock_actuel
+  const { error } = await supabase.from('mouvements').insert(
+    valid.map((l) => ({
+      restaurant_id: profile.restaurant_id,
+      produit_id: l.produit_id,
+      user_id: profile.id,
+      type: 'sortie',
+      quantite: l.quantite,
+      notes,
+    }))
+  )
+  if (error) return { error: 'Error al registrar las salidas.' }
 
   revalidatePath('/sorties')
   revalidatePath('/stock')

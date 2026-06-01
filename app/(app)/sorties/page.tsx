@@ -18,7 +18,7 @@ export default async function SortiesPage() {
       .limit(50),
     supabase
       .from('produits')
-      .select('id, nom, unite, stock_actuel')
+      .select('id, nom, unite, stock_actuel, stock_minimum')
       .eq('actif', true)
       .order('nom'),
   ])
