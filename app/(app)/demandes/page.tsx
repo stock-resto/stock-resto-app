@@ -1,6 +1,7 @@
 import { createClient } from '@/lib/supabase/server'
 import { getProfile } from '@/lib/dal'
 import { DemandesList, type DemandeRow } from '@/components/demandes/demandes-list'
+import { DemandesMobile } from '@/components/cuisinier/demandes-mobile'
 import type { ProductoOption } from '@/components/stock/entrada-modal'
 
 export default async function DemandesPage() {
@@ -24,11 +25,28 @@ export default async function DemandesPage() {
       .order('nom'),
   ])
 
-  return (
+  const rows = (demandes ?? []) as unknown as DemandeRow[]
+  const isCuisinier = profile?.role === 'cuisinier'
+
+  const desktop = (
     <DemandesList
-      demandes={(demandes ?? []) as unknown as DemandeRow[]}
+      demandes={rows}
       produits={(produits ?? []) as ProductoOption[]}
       role={profile!.role}
     />
   )
+
+  // Cuisinier : vue mobile dédiée < md (création via le FAB du shell), liste classique ≥ md
+  if (isCuisinier) {
+    return (
+      <>
+        <div className="md:hidden">
+          <DemandesMobile demandes={rows} />
+        </div>
+        <div className="hidden md:block">{desktop}</div>
+      </>
+    )
+  }
+
+  return desktop
 }

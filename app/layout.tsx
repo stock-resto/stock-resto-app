@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Hanken_Grotesk, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -17,6 +17,14 @@ const jetbrainsMono = JetBrains_Mono({
 export const metadata: Metadata = {
   title: "Mise en Place — Gestión de inventario",
   description: "Gestión de inventario para restaurantes",
+};
+
+// viewport-fit=cover : indispensable pour que env(safe-area-inset-*) soit non nul
+// (encoche / home indicator iOS, notamment en mode standalone PWA).
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
 };
 
 export default function RootLayout({
