@@ -37,12 +37,23 @@ export function StockMobile({
   const [cat, setCat] = useState('all')
 
   const list = useMemo(() => {
-    const nq = norm(q)
-    return produits.filter(
-      (p) =>
-        (cat === 'all' || p.categorie_id === cat) &&
-        (!nq || norm(p.nom).includes(nq))
-    )
+    const tokens = norm(q).split(/\s+/).filter(Boolean)
+    return produits.filter((p) => {
+      if (cat !== 'all' && p.categorie_id !== cat) return false
+      if (tokens.length === 0) return true
+      // Botte de foin : nom + categoría + proveedor + presentación + unidad + estado
+      const hay = norm(
+        [
+          p.nom,
+          p.categories?.nom ?? '',
+          p.fournisseurs?.nom ?? '',
+          p.presentation ?? '',
+          p.unite,
+          PILL[status(p)].label,
+        ].join(' ')
+      )
+      return tokens.every((t) => hay.includes(t))
+    })
   }, [produits, q, cat])
 
   const low = produits.filter((p) => status(p) !== 'ok').length
@@ -65,8 +76,8 @@ export function StockMobile({
           <input
             value={q}
             onChange={(e) => setQ(e.target.value)}
-            placeholder="Buscar…"
-            className="w-full bg-transparent text-[15px] outline-none"
+            placeholder="Buscar por nombre, proveedor, estado…"
+            className="w-full bg-transparent text-base outline-none"
           />
         </div>
         <div className="-mx-5 flex gap-1.5 overflow-x-auto px-5 pb-0.5 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">

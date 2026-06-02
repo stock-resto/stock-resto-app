@@ -143,7 +143,7 @@ export function CrearSolicitudOverlay({
               onChange={(e) => setNote(e.target.value)}
               placeholder="Ej. Para el servicio de la noche"
               rows={3}
-              className="w-full resize-none rounded-xl border border-input bg-card px-3 py-2.5 text-sm outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
+              className="w-full resize-none rounded-xl border border-input bg-card px-3 py-2.5 text-base outline-none focus:border-primary focus:ring-2 focus:ring-primary/20"
             />
           </div>
 
@@ -260,7 +260,7 @@ function ProductPicker({
             onChange={(e) => setQ(e.target.value)}
             placeholder="Buscar…"
             autoFocus
-            className="w-full bg-transparent text-[15px] outline-none"
+            className="w-full bg-transparent text-base outline-none"
           />
         </div>
         <div className="flex flex-col overflow-y-auto">
