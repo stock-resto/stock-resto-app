@@ -13,6 +13,14 @@ export type MouvementRecent = {
   users: { nom: string } | null
 }
 
+export type ProduitAlerta = {
+  nom: string
+  unite: string
+  stock_actuel: number
+  stock_minimum: number
+  categories: { nom: string } | null
+}
+
 type StatColor = 'green' | 'orange' | 'red' | 'blue' | 'muted'
 
 const colorMap: Record<StatColor, { bg: string; text: string }> = {
@@ -62,6 +70,7 @@ export function DashboardView({
   alertaCount,
   agotadoCount,
   enEsperaCount,
+  enAlerta,
   recientes,
 }: {
   isPatron: boolean
@@ -70,6 +79,7 @@ export function DashboardView({
   alertaCount: number
   agotadoCount: number
   enEsperaCount: number
+  enAlerta: ProduitAlerta[]
   recientes: MouvementRecent[]
 }) {
   const hora = new Date().getHours()
@@ -123,6 +133,66 @@ export function DashboardView({
           href="/demandes"
         />
       </div>
+
+      {enAlerta.length > 0 && (
+        <div className="flex flex-col gap-3">
+          <div className="flex items-center justify-between">
+            <h2 className="text-base font-semibold">Productos en alerta</h2>
+            <Link href="/stock" className="text-sm text-primary hover:underline">
+              Ver stock →
+            </Link>
+          </div>
+          <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border text-xs uppercase text-muted-foreground">
+                    <th className="px-4 py-3 text-left font-medium">Producto</th>
+                    <th className="hidden px-4 py-3 text-left font-medium sm:table-cell">Categoría</th>
+                    <th className="px-4 py-3 text-right font-medium">Stock actual</th>
+                    <th className="px-4 py-3 text-right font-medium">Mínimo</th>
+                    <th className="px-4 py-3 text-left font-medium">Estado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {enAlerta.map((p) => {
+                    const agotado = p.stock_actuel === 0
+                    return (
+                      <tr
+                        key={p.nom}
+                        className="border-b border-border last:border-0 transition-colors hover:bg-secondary/50"
+                      >
+                        <td className="px-4 py-3 font-medium">{p.nom}</td>
+                        <td className="hidden px-4 py-3 text-muted-foreground sm:table-cell">
+                          {p.categories?.nom ?? '—'}
+                        </td>
+                        <td className={`px-4 py-3 text-right font-mono font-semibold ${agotado ? 'text-destructive' : 'text-[var(--warn)]'}`}>
+                          {p.stock_actuel} {p.unite}
+                        </td>
+                        <td className="px-4 py-3 text-right font-mono text-muted-foreground">
+                          {p.stock_minimum} {p.unite}
+                        </td>
+                        <td className="px-4 py-3">
+                          <span
+                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                              agotado
+                                ? 'bg-destructive/10 text-destructive'
+                                : 'bg-[color-mix(in_oklch,var(--warn)_15%,transparent)] text-[var(--warn)]'
+                            }`}
+                          >
+                            <Icon name="alert" size={11} />
+                            {agotado ? 'Agotado' : 'Bajo'}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="flex flex-col gap-3">
         <div className="flex items-center justify-between">

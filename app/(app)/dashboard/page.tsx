@@ -1,6 +1,6 @@
 import { createClient } from '@/lib/supabase/server'
 import { getProfile } from '@/lib/dal'
-import { DashboardView, type MouvementRecent } from '@/components/dashboard/dashboard-view'
+import { DashboardView, type MouvementRecent, type ProduitAlerta } from '@/components/dashboard/dashboard-view'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -11,8 +11,9 @@ export default async function DashboardPage() {
   const [{ data: produits }, { count: enEspera }, { data: recientes }] = await Promise.all([
     supabase
       .from('produits')
-      .select('stock_actuel, stock_minimum, valeur_unitaire')
-      .eq('actif', true),
+      .select('nom, unite, stock_actuel, stock_minimum, valeur_unitaire, categories(nom)')
+      .eq('actif', true)
+      .order('nom'),
     supabase
       .from('demandes')
       .select('*', { count: 'exact', head: true })
@@ -28,10 +29,12 @@ export default async function DashboardPage() {
   const valorTotal = isPatron
     ? all.reduce((s, p) => s + p.stock_actuel * p.valeur_unitaire, 0)
     : 0
-  const alertaCount = all.filter(
-    (p) => p.stock_actuel > 0 && p.stock_actuel <= p.stock_minimum,
-  ).length
-  const agotadoCount = all.filter((p) => p.stock_actuel === 0).length
+
+  // Produits en alerta : stock_actuel <= stock_minimum (inclut les agotados)
+  const enAlerta = all.filter((p) => p.stock_actuel <= p.stock_minimum) as unknown as ProduitAlerta[]
+
+  const alertaCount = enAlerta.filter((p) => p.stock_actuel > 0).length
+  const agotadoCount = enAlerta.filter((p) => p.stock_actuel === 0).length
 
   return (
     <DashboardView
@@ -41,6 +44,7 @@ export default async function DashboardPage() {
       alertaCount={alertaCount}
       agotadoCount={agotadoCount}
       enEsperaCount={enEspera ?? 0}
+      enAlerta={enAlerta}
       recientes={(recientes ?? []) as unknown as MouvementRecent[]}
     />
   )
