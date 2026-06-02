@@ -1,6 +1,11 @@
 import { createClient } from '@/lib/supabase/server'
 import { getProfile } from '@/lib/dal'
-import { DashboardView, type MouvementRecent, type ProduitAlerta } from '@/components/dashboard/dashboard-view'
+import {
+  DashboardView,
+  type MouvementRecent,
+  type ProduitAlerta,
+  type DemandeResumen,
+} from '@/components/dashboard/dashboard-view'
 
 export default async function DashboardPage() {
   const supabase = await createClient()
@@ -8,7 +13,7 @@ export default async function DashboardPage() {
 
   const isPatron = profile?.role === 'patron'
 
-  const [{ data: produits }, { count: enEspera }, { data: recientes }] = await Promise.all([
+  const [{ data: produits }, { data: pendientes }, { data: recientes }] = await Promise.all([
     supabase
       .from('produits')
       .select('nom, unite, stock_actuel, stock_minimum, valeur_unitaire, categories(nom)')
@@ -16,8 +21,10 @@ export default async function DashboardPage() {
       .order('nom'),
     supabase
       .from('demandes')
-      .select('*', { count: 'exact', head: true })
-      .eq('statut', 'en_attente'),
+      .select('id, numero, created_at, cuisinier:cuisinier_id(nom), demande_lignes(id)')
+      .eq('statut', 'en_attente')
+      .order('numero', { ascending: false })
+      .limit(5),
     supabase
       .from('mouvements')
       .select('id, type, quantite, created_at, produits(nom, unite), users(nom)')
@@ -30,9 +37,7 @@ export default async function DashboardPage() {
     ? all.reduce((s, p) => s + p.stock_actuel * p.valeur_unitaire, 0)
     : 0
 
-  // Produits en alerta : stock_actuel <= stock_minimum (inclut les agotados)
   const enAlerta = all.filter((p) => p.stock_actuel <= p.stock_minimum) as unknown as ProduitAlerta[]
-
   const alertaCount = enAlerta.filter((p) => p.stock_actuel > 0).length
   const agotadoCount = enAlerta.filter((p) => p.stock_actuel === 0).length
 
@@ -43,8 +48,9 @@ export default async function DashboardPage() {
       valorTotal={valorTotal}
       alertaCount={alertaCount}
       agotadoCount={agotadoCount}
-      enEsperaCount={enEspera ?? 0}
+      enEsperaCount={pendientes?.length ?? 0}
       enAlerta={enAlerta}
+      pendientes={(pendientes ?? []) as unknown as DemandeResumen[]}
       recientes={(recientes ?? []) as unknown as MouvementRecent[]}
     />
   )
