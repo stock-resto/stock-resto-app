@@ -15,6 +15,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: '/stock', label: 'Stock', icon: 'box' },
     { href: '/entrees', label: 'Entradas', icon: 'arrowDown' },
     { href: '/sorties', label: 'Salidas', icon: 'arrowUp' },
+    { href: '/mouvements', label: 'Historial', icon: 'trend' },
     { href: '/demandes', label: 'Solicitudes', icon: 'clipboard' },
     { href: '/utilisateurs', label: 'Usuarios', icon: 'users' },
   ],
@@ -23,6 +24,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: '/stock', label: 'Stock', icon: 'box' },
     { href: '/entrees', label: 'Entradas', icon: 'arrowDown' },
     { href: '/sorties', label: 'Salidas', icon: 'arrowUp' },
+    { href: '/mouvements', label: 'Historial', icon: 'trend' },
     { href: '/demandes', label: 'Solicitudes', icon: 'clipboard' },
   ],
   cuisinier: [
