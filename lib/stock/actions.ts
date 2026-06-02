@@ -6,6 +6,44 @@ import { getProfile } from '@/lib/dal'
 
 export type ProductoState = { error?: string; success?: boolean }
 
+type SupabaseClient = Awaited<ReturnType<typeof createClient>>
+
+// Cherche une catégorie/fournisseur par nom (insensible casse/espaces) ou la crée.
+// Retourne l'id, ou null si le nom est vide. Lève une erreur si la création échoue.
+async function findOrCreateByName(
+  supabase: SupabaseClient,
+  table: 'categories' | 'fournisseurs',
+  restaurantId: string,
+  rawName: string | null
+): Promise<{ id: string | null; error?: string }> {
+  const name = (rawName ?? '').trim()
+  if (!name) return { id: null }
+
+  // Échappe les jokers ilike pour faire une égalité insensible à la casse
+  const pattern = name.replace(/[%_\\]/g, '\\$&')
+  const { data: existing } = await supabase
+    .from(table)
+    .select('id')
+    .eq('restaurant_id', restaurantId)
+    .ilike('nom', pattern)
+    .limit(1)
+    .maybeSingle()
+
+  if (existing) return { id: existing.id }
+
+  const { data: created, error } = await supabase
+    .from(table)
+    .insert({ restaurant_id: restaurantId, nom: name })
+    .select('id')
+    .single()
+
+  if (error || !created) {
+    const label = table === 'categories' ? 'la categoría' : 'el proveedor'
+    return { id: null, error: `Error al crear ${label}.` }
+  }
+  return { id: created.id }
+}
+
 export async function upsertProducto(
   _prev: ProductoState,
   formData: FormData
@@ -20,9 +58,21 @@ export async function upsertProducto(
 
   const id = (formData.get('id') as string | null) || null
 
+  const supabase = await createClient()
+
+  // Catégorie & fournisseur : créés à la volée si le nom n'existe pas
+  const cat = await findOrCreateByName(
+    supabase, 'categories', profile.restaurant_id, formData.get('categorie_nom') as string | null
+  )
+  if (cat.error) return { error: cat.error }
+  const four = await findOrCreateByName(
+    supabase, 'fournisseurs', profile.restaurant_id, formData.get('fournisseur_nom') as string | null
+  )
+  if (four.error) return { error: four.error }
+
   const payload = {
-    categorie_id: (formData.get('categorie_id') as string) || null,
-    fournisseur_id: (formData.get('fournisseur_id') as string) || null,
+    categorie_id: cat.id,
+    fournisseur_id: four.id,
     nom,
     presentation: (formData.get('presentation') as string) || null,
     unite,
@@ -31,8 +81,6 @@ export async function upsertProducto(
     valeur_unitaire: Number(formData.get('valeur_unitaire') ?? 0),
     date_peremption: (formData.get('date_peremption') as string) || null,
   }
-
-  const supabase = await createClient()
 
   if (id) {
     const { error } = await supabase

@@ -20,6 +20,14 @@ function stockStatus(p: ProduitRow): StockStatus {
   return 'ok'
 }
 
+// Minuscule + sans accents : recherche tolérante (piña = pina, arándano = arandano)
+function norm(s: string): string {
+  return s
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase()
+}
+
 const STATUS = {
   ok: { label: 'En stock', tone: 'ok' as const },
   low: { label: 'Stock bajo', tone: 'warn' as const },
@@ -59,11 +67,22 @@ export function StockTable({
   }, [])
 
   const filtered = useMemo(() => {
-    const q = query.trim().toLowerCase()
+    const tokens = norm(query).split(/\s+/).filter(Boolean)
     return produits.filter((p) => {
-      const okCat = cat === 'all' || p.categorie_id === cat
-      const okQ = !q || p.nom.toLowerCase().includes(q)
-      return okCat && okQ
+      if (cat !== 'all' && p.categorie_id !== cat) return false
+      if (tokens.length === 0) return true
+      // Botte de foin : nom + categoría + proveedor + presentación + unidad + estado
+      const hay = norm(
+        [
+          p.nom,
+          p.categories?.nom ?? '',
+          p.fournisseurs?.nom ?? '',
+          p.presentation ?? '',
+          p.unite,
+          STATUS[stockStatus(p)].label,
+        ].join(' ')
+      )
+      return tokens.every((t) => hay.includes(t))
     })
   }, [produits, query, cat])
 
@@ -124,7 +143,7 @@ export function StockTable({
             <input
               value={query}
               onChange={(e) => setQuery(e.target.value)}
-              placeholder="Buscar…"
+              placeholder="Buscar por nombre, proveedor, estado…"
               className="w-full bg-transparent text-sm outline-none"
             />
           </div>

@@ -24,8 +24,6 @@ const INIT: ProductoState = {}
 
 const inputCls =
   'h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-ring transition'
-const selectCls =
-  'h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-ring transition'
 
 function Field({
   label,
@@ -184,35 +182,35 @@ export function ProductoModal({
                 </Field>
               </div>
 
-              {/* Categoría | Proveedor */}
+              {/* Categoría | Proveedor — escribe uno nuevo para crearlo */}
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Categoría">
-                  <select
-                    name="categorie_id"
-                    defaultValue={produit?.categorie_id ?? ''}
-                    className={selectCls}
-                  >
-                    <option value="">Sin categoría</option>
+                  <input
+                    name="categorie_nom"
+                    list="categorie-opts"
+                    defaultValue={produit?.categories?.nom ?? ''}
+                    placeholder="Elige o escribe una nueva"
+                    className={inputCls}
+                  />
+                  <datalist id="categorie-opts">
                     {categories.map((c) => (
-                      <option key={c.id} value={c.id}>
-                        {c.nom}
-                      </option>
+                      <option key={c.id} value={c.nom} />
                     ))}
-                  </select>
+                  </datalist>
                 </Field>
                 <Field label="Proveedor">
-                  <select
-                    name="fournisseur_id"
-                    defaultValue={produit?.fournisseur_id ?? ''}
-                    className={selectCls}
-                  >
-                    <option value="">Sin proveedor</option>
+                  <input
+                    name="fournisseur_nom"
+                    list="fournisseur-opts"
+                    defaultValue={produit?.fournisseurs?.nom ?? ''}
+                    placeholder="Elige o escribe uno nuevo"
+                    className={inputCls}
+                  />
+                  <datalist id="fournisseur-opts">
                     {fournisseurs.map((f) => (
-                      <option key={f.id} value={f.id}>
-                        {f.nom}
-                      </option>
+                      <option key={f.id} value={f.nom} />
                     ))}
-                  </select>
+                  </datalist>
                 </Field>
               </div>
 
