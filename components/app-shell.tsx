@@ -35,7 +35,7 @@ const NAV: Record<Role, NavItem[]> = {
 
 const ROLE_LABEL: Record<Role, string> = {
   patron: 'Dueño',
-  gestionnaire: 'Encargado',
+  gestionnaire: 'Bodeguero',
   cuisinier: 'Cocinero',
 }
 

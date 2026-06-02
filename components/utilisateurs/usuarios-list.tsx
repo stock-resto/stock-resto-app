@@ -15,7 +15,7 @@ export type UsuarioRow = {
 
 const ROL = {
   patron:       { label: 'Dueño',     cls: 'text-primary bg-primary/10' },
-  gestionnaire: { label: 'Encargado', cls: 'text-[var(--info)] bg-[color-mix(in_oklch,var(--info)_15%,transparent)]' },
+  gestionnaire: { label: 'Bodeguero', cls: 'text-[var(--info)] bg-[color-mix(in_oklch,var(--info)_15%,transparent)]' },
   cuisinier:    { label: 'Cocinero',  cls: 'bg-secondary text-muted-foreground' },
 } as const
 

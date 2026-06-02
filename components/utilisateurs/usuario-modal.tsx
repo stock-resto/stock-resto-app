@@ -123,7 +123,7 @@ export function UsuarioModal({ mode, usuario, onClose }: Props) {
               className="h-10 w-full rounded-lg border border-border bg-background px-3 text-sm outline-none focus:border-ring transition"
             >
               <option value="cuisinier">Cocinero</option>
-              <option value="gestionnaire">Encargado</option>
+              <option value="gestionnaire">Bodeguero</option>
             </select>
           </Field>
 
