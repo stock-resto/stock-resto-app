@@ -1,6 +1,7 @@
 'use server'
 
 import { redirect } from 'next/navigation'
+import { headers } from 'next/headers'
 import { createClient } from '@/lib/supabase/server'
 
 // Domaine interne pour les comptes employés (jamais exposé à l'utilisateur).
@@ -81,4 +82,63 @@ export async function logout(): Promise<void> {
   const supabase = await createClient()
   await supabase.auth.signOut()
   redirect('/login')
+}
+
+// ─── Récupération de mot de passe (dueño uniquement — l'équipe n'a pas d'email) ───
+
+export type ResetRequestState = { error?: string; sent?: boolean }
+
+export async function requestPasswordReset(
+  _prev: ResetRequestState,
+  formData: FormData
+): Promise<ResetRequestState> {
+  const email = String(formData.get('email') ?? '').trim().toLowerCase()
+  if (!email || !email.includes('@')) {
+    return { error: 'Ingresa un correo válido.' }
+  }
+
+  const h = await headers()
+  const origin = h.get('origin') ?? `https://${h.get('host')}`
+
+  const supabase = await createClient()
+  await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${origin}/auth/callback?next=/reset-password`,
+  })
+
+  // Message générique : on ne révèle jamais si le compte existe (anti-énumération).
+  return { sent: true }
+}
+
+export type UpdatePasswordState = { error?: string }
+
+export async function updatePassword(
+  _prev: UpdatePasswordState,
+  formData: FormData
+): Promise<UpdatePasswordState> {
+  const password = String(formData.get('password') ?? '')
+  const confirm = String(formData.get('confirm') ?? '')
+
+  if (password.length < 6) {
+    return { error: 'La contraseña debe tener al menos 6 caracteres.' }
+  }
+  if (password !== confirm) {
+    return { error: 'Las contraseñas no coinciden.' }
+  }
+
+  const supabase = await createClient()
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    return { error: 'El enlace expiró o no es válido. Solicita uno nuevo.' }
+  }
+
+  const { error } = await supabase.auth.updateUser({ password })
+  if (error) {
+    return { error: 'No se pudo actualizar la contraseña.' }
+  }
+
+  // On ferme la session de récupération → l'utilisateur se reconnecte avec le nouveau mot de passe.
+  await supabase.auth.signOut()
+  redirect('/login?reset=ok')
 }

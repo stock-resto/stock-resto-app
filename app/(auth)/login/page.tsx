@@ -1,7 +1,13 @@
 import Link from 'next/link'
 import { LoginForm } from './login-form'
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ reset?: string }>
+}) {
+  const { reset } = await searchParams
+
   return (
     <div className="flex min-h-screen items-center justify-center bg-background px-4 py-12">
       <div className="w-full max-w-sm">
@@ -15,6 +21,12 @@ export default function LoginPage() {
             <p className="text-sm text-muted-foreground">Gestión de inventario</p>
           </div>
         </div>
+
+        {reset === 'ok' && (
+          <div className="mb-4 rounded-lg border border-[var(--ok)]/30 bg-[color-mix(in_oklch,var(--ok)_12%,transparent)] px-4 py-3 text-center text-sm font-medium text-[var(--ok)]">
+            Contraseña actualizada. Inicia sesión con la nueva.
+          </div>
+        )}
 
         {/* Carte de connexion */}
         <div className="rounded-2xl border border-border bg-card p-6 shadow-sm">

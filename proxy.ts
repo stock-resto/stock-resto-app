@@ -25,9 +25,16 @@ export async function proxy(request: NextRequest) {
     }
   )
 
+  const { pathname } = request.nextUrl
+
+  // Récupération de mot de passe : toujours accessible, même avec une session
+  // de récupération active (sinon le guard redirigerait avant le changement).
+  if (pathname === '/reset-password' || pathname.startsWith('/auth/')) {
+    return supabaseResponse
+  }
+
   // Ne pas supprimer — refreshe le token de session
   const { data: { user } } = await supabase.auth.getUser()
-  const { pathname } = request.nextUrl
 
   // Pages publiques (accessibles sans session)
   const publicPaths = ['/login', '/signup']
