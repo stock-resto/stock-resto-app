@@ -28,7 +28,12 @@ export async function crearEmpleado(
   if (password.length < 6) return { error: 'La contraseña debe tener al menos 6 caracteres.' }
   if (!['gestionnaire', 'cuisinier'].includes(role)) return { error: 'Rol inválido.' }
 
-  const admin = createAdminClient()
+  let admin
+  try {
+    admin = createAdminClient()
+  } catch {
+    return { error: 'Configuración del servidor incompleta. Contacta al administrador.' }
+  }
   const email = `${username}@${DOMAIN}`
 
   const { data, error } = await admin.auth.admin.createUser({
@@ -111,7 +116,12 @@ export async function resetearPassword(
 
   if (!user) return { error: 'Usuario no encontrado.' }
 
-  const admin = createAdminClient()
+  let admin
+  try {
+    admin = createAdminClient()
+  } catch {
+    return { error: 'Configuración del servidor incompleta. Contacta al administrador.' }
+  }
   const { error } = await admin.auth.admin.updateUserById(id, { password })
   if (error) return { error: 'Error al cambiar la contraseña.' }
 
