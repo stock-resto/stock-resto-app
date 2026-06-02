@@ -48,8 +48,8 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL(dest, request.url))
   }
 
-  // Routes réservées au patron
-  if (pathname.startsWith('/mouvements') || pathname.startsWith('/utilisateurs')) {
+  // Routes réservées au patron uniquement
+  if (pathname.startsWith('/utilisateurs')) {
     const { data: profile } = await supabase
       .from('users')
       .select('role')

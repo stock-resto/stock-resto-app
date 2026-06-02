@@ -21,7 +21,7 @@ export default async function DashboardPage() {
       .order('nom'),
     supabase
       .from('demandes')
-      .select('id, numero, created_at, cuisinier:cuisinier_id(nom), demande_lignes(id)')
+      .select('id, numero, created_at, cuisinier:users!cuisinier_id(nom), demande_lignes(id)')
       .eq('statut', 'en_attente')
       .order('numero', { ascending: false })
       .limit(5),
