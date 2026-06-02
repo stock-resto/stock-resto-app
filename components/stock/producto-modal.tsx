@@ -3,12 +3,15 @@
 import { useEffect, useCallback, useState } from 'react'
 import { useActionState } from 'react'
 import { Icon } from '@/components/icon'
+import { Combobox } from '@/components/ui/combobox'
 import {
   upsertProducto,
   desactivarProducto,
   type ProductoState,
 } from '@/lib/stock/actions'
 import type { ProduitRow } from './stock-table'
+
+const UNIT_OPTS = ['kg', 'g', 'L', 'mL', 'unidad', 'docena', 'caja', 'bolsa', 'saco']
 
 type Props = {
   mode: 'create' | 'edit'
@@ -156,21 +159,14 @@ export function ProductoModal({
               {/* Unidad | Presentación */}
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Unidad *">
-                  <input
+                  <Combobox
                     name="unite"
                     required
-                    list="unite-opts"
+                    options={UNIT_OPTS}
                     defaultValue={produit?.unite ?? ''}
                     placeholder="kg, L, unidad…"
                     className={inputCls}
                   />
-                  <datalist id="unite-opts">
-                    {['kg', 'g', 'L', 'mL', 'unidad', 'docena', 'caja', 'bolsa', 'saco'].map(
-                      (u) => (
-                        <option key={u} value={u} />
-                      )
-                    )}
-                  </datalist>
                 </Field>
                 <Field label="Presentación">
                   <input
@@ -185,32 +181,22 @@ export function ProductoModal({
               {/* Categoría | Proveedor — escribe uno nuevo para crearlo */}
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Categoría">
-                  <input
+                  <Combobox
                     name="categorie_nom"
-                    list="categorie-opts"
+                    options={categories.map((c) => c.nom)}
                     defaultValue={produit?.categories?.nom ?? ''}
                     placeholder="Elige o escribe una nueva"
                     className={inputCls}
                   />
-                  <datalist id="categorie-opts">
-                    {categories.map((c) => (
-                      <option key={c.id} value={c.nom} />
-                    ))}
-                  </datalist>
                 </Field>
                 <Field label="Proveedor">
-                  <input
+                  <Combobox
                     name="fournisseur_nom"
-                    list="fournisseur-opts"
+                    options={fournisseurs.map((f) => f.nom)}
                     defaultValue={produit?.fournisseurs?.nom ?? ''}
                     placeholder="Elige o escribe uno nuevo"
                     className={inputCls}
                   />
-                  <datalist id="fournisseur-opts">
-                    {fournisseurs.map((f) => (
-                      <option key={f.id} value={f.nom} />
-                    ))}
-                  </datalist>
                 </Field>
               </div>
 
