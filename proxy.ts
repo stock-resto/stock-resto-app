@@ -68,6 +68,19 @@ export async function proxy(request: NextRequest) {
     }
   }
 
+  // Pedidos : patron + bodeguero seulement (pas le cocinero)
+  if (pathname.startsWith('/pedidos')) {
+    const { data: profile } = await supabase
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single()
+
+    if (profile?.role === 'cuisinier') {
+      return NextResponse.redirect(new URL('/demandes', request.url))
+    }
+  }
+
   return supabaseResponse
 }
 

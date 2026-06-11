@@ -1,6 +1,7 @@
 export type Role = 'patron' | 'gestionnaire' | 'cuisinier'
 export type MouvementType = 'entree' | 'sortie'
 export type DemandeStatut = 'en_attente' | 'approuvee' | 'rejetee' | 'livree'
+export type PedidoStatut = 'brouillon' | 'enviada' | 'recibida' | 'cancelada'
 
 export interface Database {
   public: {
@@ -221,6 +222,69 @@ export interface Database {
         }
         Relationships: []
       }
+      pedidos: {
+        Row: {
+          id: string
+          numero: number
+          restaurant_id: string
+          fournisseur_id: string | null
+          statut: string
+          note: string | null
+          created_by: string
+          enviada_at: string | null
+          recibida_at: string | null
+          cancelada_at: string | null
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          numero?: number
+          restaurant_id: string
+          fournisseur_id?: string | null
+          statut?: string
+          note?: string | null
+          created_by: string
+          enviada_at?: string | null
+          recibida_at?: string | null
+          cancelada_at?: string | null
+          created_at?: string
+        }
+        Update: {
+          fournisseur_id?: string | null
+          statut?: string
+          note?: string | null
+          enviada_at?: string | null
+          recibida_at?: string | null
+          cancelada_at?: string | null
+        }
+        Relationships: []
+      }
+      pedido_lineas: {
+        Row: {
+          id: string
+          pedido_id: string
+          produit_id: string
+          cantidad_pedida: number
+          cantidad_recibida: number
+          precio_unitario: number
+          created_at: string
+        }
+        Insert: {
+          id?: string
+          pedido_id: string
+          produit_id: string
+          cantidad_pedida: number
+          cantidad_recibida?: number
+          precio_unitario?: number
+          created_at?: string
+        }
+        Update: {
+          cantidad_pedida?: number
+          cantidad_recibida?: number
+          precio_unitario?: number
+        }
+        Relationships: []
+      }
     }
     Views: Record<string, never>
     Functions: {
@@ -256,3 +320,5 @@ export type Produit = Database['public']['Tables']['produits']['Row']
 export type Mouvement = Database['public']['Tables']['mouvements']['Row']
 export type Demande = Database['public']['Tables']['demandes']['Row']
 export type DemandeLigne = Database['public']['Tables']['demande_lignes']['Row']
+export type Pedido = Database['public']['Tables']['pedidos']['Row']
+export type PedidoLinea = Database['public']['Tables']['pedido_lineas']['Row']

@@ -17,6 +17,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: '/sorties', label: 'Salidas', icon: 'arrowUp' },
     { href: '/mouvements', label: 'Historial', icon: 'trend' },
     { href: '/demandes', label: 'Solicitudes', icon: 'clipboard' },
+    { href: '/pedidos', label: 'Pedidos', icon: 'cart' },
     { href: '/utilisateurs', label: 'Usuarios', icon: 'users' },
   ],
   gestionnaire: [
@@ -26,6 +27,7 @@ const NAV: Record<Role, NavItem[]> = {
     { href: '/sorties', label: 'Salidas', icon: 'arrowUp' },
     { href: '/mouvements', label: 'Historial', icon: 'trend' },
     { href: '/demandes', label: 'Solicitudes', icon: 'clipboard' },
+    { href: '/pedidos', label: 'Pedidos', icon: 'cart' },
   ],
   cuisinier: [
     { href: '/stock', label: 'Stock', icon: 'box' },
