@@ -6,18 +6,28 @@ import { getProfile } from '@/lib/dal'
 
 export type PedidoState = { error?: string; success?: boolean; pedidoId?: string }
 
-// Récupère le snapshot des prix unitaires pour une liste de produits.
-async function preciosDeProductos(
+// Snapshot par produit pour figer la ligne de pedido (prix + unité d'achat).
+// L'unité d'achat est snapshottée comme le prix : la ligne reste juste même si
+// le produit est modifié plus tard.
+type ProductoDatos = { precio: number; unite_achat: string | null; factor_achat: number | null }
+
+async function datosDeProductos(
   supabase: Awaited<ReturnType<typeof createClient>>,
   ids: string[]
-): Promise<Record<string, number>> {
+): Promise<Record<string, ProductoDatos>> {
   if (ids.length === 0) return {}
   const { data } = await supabase
     .from('produits')
-    .select('id, valeur_unitaire')
+    .select('id, valeur_unitaire, unite_achat, factor_achat')
     .in('id', ids)
-  const map: Record<string, number> = {}
-  for (const p of data ?? []) map[p.id] = Number(p.valeur_unitaire) || 0
+  const map: Record<string, ProductoDatos> = {}
+  for (const p of data ?? []) {
+    map[p.id] = {
+      precio: Number(p.valeur_unitaire) || 0,
+      unite_achat: p.unite_achat ?? null,
+      factor_achat: p.factor_achat != null ? Number(p.factor_achat) : null,
+    }
+  }
   return map
 }
 
@@ -48,7 +58,7 @@ export async function crearPedidosDesdeAlertas(
   if (gruposValidos.length === 0) return { error: 'Selecciona al menos un producto.' }
 
   const supabase = await createClient()
-  const precios = await preciosDeProductos(
+  const datos = await datosDeProductos(
     supabase,
     gruposValidos.flatMap((g) => g.items.map((it) => it.produit_id))
   )
@@ -71,7 +81,9 @@ export async function crearPedidosDesdeAlertas(
         pedido_id: pedido.id,
         produit_id: it.produit_id,
         cantidad_pedida: it.cantidad,
-        precio_unitario: precios[it.produit_id] ?? 0,
+        precio_unitario: datos[it.produit_id]?.precio ?? 0,
+        unite_achat: datos[it.produit_id]?.unite_achat ?? null,
+        factor_achat: datos[it.produit_id]?.factor_achat ?? null,
       }))
     )
     if (lineasError) return { error: 'Error al guardar los productos.' }
@@ -104,7 +116,7 @@ export async function crearPedido(
   if (valid.length === 0) return { error: 'Agrega al menos un producto.' }
 
   const supabase = await createClient()
-  const precios = await preciosDeProductos(supabase, valid.map((l) => l.produit_id))
+  const datos = await datosDeProductos(supabase, valid.map((l) => l.produit_id))
 
   const { data: pedido, error: pedidoError } = await supabase
     .from('pedidos')
@@ -123,7 +135,9 @@ export async function crearPedido(
       pedido_id: pedido.id,
       produit_id: l.produit_id,
       cantidad_pedida: l.cantidad,
-      precio_unitario: precios[l.produit_id] ?? 0,
+      precio_unitario: datos[l.produit_id]?.precio ?? 0,
+      unite_achat: datos[l.produit_id]?.unite_achat ?? null,
+      factor_achat: datos[l.produit_id]?.factor_achat ?? null,
     }))
   )
   if (lineasError) return { error: 'Error al guardar los productos.' }
@@ -164,7 +178,7 @@ export async function editarPedido(
     .eq('statut', 'brouillon')
   if (noteError) return { error: 'Error al actualizar el pedido.' }
 
-  const precios = await preciosDeProductos(supabase, valid.map((l) => l.produit_id))
+  const datos = await datosDeProductos(supabase, valid.map((l) => l.produit_id))
 
   const { error: deleteError } = await supabase
     .from('pedido_lineas')
@@ -177,7 +191,9 @@ export async function editarPedido(
       pedido_id: id,
       produit_id: l.produit_id,
       cantidad_pedida: l.cantidad,
-      precio_unitario: precios[l.produit_id] ?? 0,
+      precio_unitario: datos[l.produit_id]?.precio ?? 0,
+      unite_achat: datos[l.produit_id]?.unite_achat ?? null,
+      factor_achat: datos[l.produit_id]?.factor_achat ?? null,
     }))
   )
   if (insertError) return { error: 'Error al guardar los productos.' }
@@ -286,7 +302,7 @@ export async function registrarRecepcion(
 
   revalidatePath('/pedidos')
   revalidatePath(`/pedidos/${pedido_id}`)
-  revalidatePath('/entrees')
+  revalidatePath('/mouvements')
   revalidatePath('/stock')
   return { success: true }
 }

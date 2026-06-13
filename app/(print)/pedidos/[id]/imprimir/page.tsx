@@ -8,6 +8,7 @@ import { PrintButton } from '@/components/pedidos/print-button'
 
 type LigneRow = {
   cantidad_pedida: number
+  unite_achat: string | null
   produits: { nom: string; unite: string; presentation: string | null } | null
 }
 
@@ -35,7 +36,7 @@ export default async function ImprimirPedidoPage({
       .select(`
         id, numero, note, created_at,
         fournisseur:fournisseur_id(nom, contact),
-        pedido_lineas(cantidad_pedida, produits(nom, unite, presentation))
+        pedido_lineas(cantidad_pedida, unite_achat, produits(nom, unite, presentation))
       `)
       .eq('id', id)
       .single(),
@@ -106,7 +107,7 @@ export default async function ImprimirPedidoPage({
                 <td className="py-2.5 font-semibold">{l.produits?.nom ?? '—'}</td>
                 <td className="py-2.5 text-[#666]">{l.produits?.presentation ?? '—'}</td>
                 <td className="py-2.5 text-right font-mono">
-                  {Number(l.cantidad_pedida)} {l.produits?.unite ?? ''}
+                  {Number(l.cantidad_pedida)} {l.unite_achat ?? l.produits?.unite ?? ''}
                 </td>
               </tr>
             ))}

@@ -22,6 +22,7 @@ export type PedidoRow = {
     cantidad_pedida: number
     cantidad_recibida: number
     precio_unitario: number
+    factor_achat: number | null
   }[]
 }
 
@@ -141,7 +142,11 @@ export function PedidosList({
               const statut = p.statut as keyof typeof STATUT_PEDIDO
               const { label, cls } = STATUT_PEDIDO[statut] ?? STATUT_PEDIDO.brouillon
               const total = p.pedido_lineas.reduce(
-                (a, l) => a + Number(l.cantidad_pedida) * Number(l.precio_unitario),
+                (a, l) =>
+                  a +
+                  Number(l.cantidad_pedida) *
+                    (l.factor_achat && Number(l.factor_achat) > 0 ? Number(l.factor_achat) : 1) *
+                    Number(l.precio_unitario),
                 0
               )
               return (

@@ -99,6 +99,8 @@ export interface Database {
           nom: string
           presentation: string | null
           unite: string
+          unite_achat: string | null
+          factor_achat: number | null
           stock_actuel: number
           stock_minimum: number
           stock_maximum: number | null
@@ -115,6 +117,8 @@ export interface Database {
           nom: string
           presentation?: string | null
           unite?: string
+          unite_achat?: string | null
+          factor_achat?: number | null
           stock_actuel?: number
           stock_minimum?: number
           stock_maximum?: number | null
@@ -129,6 +133,8 @@ export interface Database {
           nom?: string
           presentation?: string | null
           unite?: string
+          unite_achat?: string | null
+          factor_achat?: number | null
           stock_actuel?: number
           stock_minimum?: number
           stock_maximum?: number | null
@@ -267,6 +273,8 @@ export interface Database {
           cantidad_pedida: number
           cantidad_recibida: number
           precio_unitario: number
+          unite_achat: string | null
+          factor_achat: number | null
           created_at: string
         }
         Insert: {
@@ -276,12 +284,16 @@ export interface Database {
           cantidad_pedida: number
           cantidad_recibida?: number
           precio_unitario?: number
+          unite_achat?: string | null
+          factor_achat?: number | null
           created_at?: string
         }
         Update: {
           cantidad_pedida?: number
           cantidad_recibida?: number
           precio_unitario?: number
+          unite_achat?: string | null
+          factor_achat?: number | null
         }
         Relationships: []
       }

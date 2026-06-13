@@ -9,6 +9,8 @@ type LigneRow = {
   cantidad_pedida: number
   cantidad_recibida: number
   precio_unitario: number
+  unite_achat: string | null
+  factor_achat: number | null
   produits: { nom: string; unite: string; presentation: string | null } | null
 }
 
@@ -40,7 +42,7 @@ export default async function PedidoDetailPage({
     .select(`
       id, numero, statut, note, created_at, enviada_at, recibida_at, cancelada_at,
       fournisseur:fournisseur_id(id, nom, contact),
-      pedido_lineas(id, produit_id, cantidad_pedida, cantidad_recibida, precio_unitario, produits(nom, unite, presentation))
+      pedido_lineas(id, produit_id, cantidad_pedida, cantidad_recibida, precio_unitario, unite_achat, factor_achat, produits(nom, unite, presentation))
     `)
     .eq('id', id)
     .single()
@@ -55,6 +57,8 @@ export default async function PedidoDetailPage({
       nom: l.produits?.nom ?? '—',
       presentation: l.produits?.presentation ?? null,
       unite: l.produits?.unite ?? '',
+      uniteAchat: l.unite_achat ?? null,
+      factor: l.factor_achat != null && Number(l.factor_achat) > 0 ? Number(l.factor_achat) : 1,
       cantidad_pedida: Number(l.cantidad_pedida),
       cantidad_recibida: Number(l.cantidad_recibida),
       precio: isPatron ? Number(l.precio_unitario) : 0, // financiero solo patrón
@@ -66,16 +70,19 @@ export default async function PedidoDetailPage({
   if (pedido.fournisseur?.id) {
     const { data: prods } = await supabase
       .from('produits')
-      .select('id, nom, unite, presentation, valeur_unitaire')
+      .select('id, nom, unite, unite_achat, factor_achat, presentation, valeur_unitaire')
       .eq('actif', true)
       .eq('fournisseur_id', pedido.fournisseur.id)
       .order('nom')
     productosFournisseur = ((prods ?? []) as {
-      id: string; nom: string; unite: string; presentation: string | null; valeur_unitaire: number
+      id: string; nom: string; unite: string; unite_achat: string | null
+      factor_achat: number | null; presentation: string | null; valeur_unitaire: number
     }[]).map((p) => ({
       id: p.id,
       nom: p.nom,
       unite: p.unite,
+      uniteAchat: p.unite_achat ?? null,
+      factor: p.factor_achat != null && Number(p.factor_achat) > 0 ? Number(p.factor_achat) : 1,
       presentation: p.presentation,
       precio: isPatron ? Number(p.valeur_unitaire) : 0,
     }))

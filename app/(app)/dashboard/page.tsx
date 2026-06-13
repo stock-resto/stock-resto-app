@@ -13,24 +13,29 @@ export default async function DashboardPage() {
 
   const isPatron = profile?.role === 'patron'
 
-  const [{ data: produits }, { data: pendientes }, { data: recientes }] = await Promise.all([
-    supabase
-      .from('produits')
-      .select('nom, unite, stock_actuel, stock_minimum, valeur_unitaire, categories(nom)')
-      .eq('actif', true)
-      .order('nom'),
-    supabase
-      .from('demandes')
-      .select('id, numero, created_at, cuisinier:users!cuisinier_id(nom), demande_lignes(id)')
-      .eq('statut', 'en_attente')
-      .order('numero', { ascending: false })
-      .limit(5),
-    supabase
-      .from('mouvements')
-      .select('id, type, quantite, created_at, produits(nom, unite), users(nom)')
-      .order('created_at', { ascending: false })
-      .limit(10),
-  ])
+  const [{ data: produits }, { data: pendientes }, { data: recientes }, { count: pedidosEnCurso }] =
+    await Promise.all([
+      supabase
+        .from('produits')
+        .select('nom, unite, stock_actuel, stock_minimum, valeur_unitaire, categories(nom)')
+        .eq('actif', true)
+        .order('nom'),
+      supabase
+        .from('demandes')
+        .select('id, numero, created_at, cuisinier:users!cuisinier_id(nom), demande_lignes(id)')
+        .eq('statut', 'en_attente')
+        .order('numero', { ascending: false })
+        .limit(5),
+      supabase
+        .from('mouvements')
+        .select('id, type, quantite, created_at, produits(nom, unite), users(nom)')
+        .order('created_at', { ascending: false })
+        .limit(10),
+      supabase
+        .from('pedidos')
+        .select('id', { count: 'exact', head: true })
+        .eq('statut', 'enviada'),
+    ])
 
   const all = produits ?? []
   const valorTotal = isPatron
@@ -49,6 +54,7 @@ export default async function DashboardPage() {
       alertaCount={alertaCount}
       agotadoCount={agotadoCount}
       enEsperaCount={pendientes?.length ?? 0}
+      pedidosEnCurso={pedidosEnCurso ?? 0}
       enAlerta={enAlerta}
       pendientes={(pendientes ?? []) as unknown as DemandeResumen[]}
       recientes={(recientes ?? []) as unknown as MouvementRecent[]}

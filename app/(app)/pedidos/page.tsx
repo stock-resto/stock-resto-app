@@ -13,12 +13,12 @@ export default async function PedidosPage() {
       .select(`
         id, numero, statut, note, created_at, enviada_at, recibida_at, cancelada_at,
         fournisseur:fournisseur_id(nom, contact),
-        pedido_lineas(id, cantidad_pedida, cantidad_recibida, precio_unitario)
+        pedido_lineas(id, cantidad_pedida, cantidad_recibida, precio_unitario, factor_achat)
       `)
       .order('created_at', { ascending: false }),
     supabase
       .from('produits')
-      .select('id, nom, unite, presentation, fournisseur_id, stock_actuel, stock_minimum')
+      .select('id, nom, unite, unite_achat, presentation, fournisseur_id, stock_actuel, stock_minimum')
       .eq('actif', true)
       .order('nom'),
     supabase.from('fournisseurs').select('id, nom, contact').order('nom'),

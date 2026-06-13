@@ -9,6 +9,7 @@ export type ProductoPedido = {
   id: string
   nom: string
   unite: string
+  unite_achat: string | null
   presentation: string | null
   fournisseur_id: string | null
   stock_actuel: number
@@ -153,6 +154,9 @@ export function NuevoPedidoModal({ productos, fournisseurs, onClose }: Props) {
                       <div className="truncate text-sm font-medium">{p.nom}</div>
                       <div className="text-[12px] text-muted-foreground">
                         En stock: {p.stock_actuel} {p.unite}
+                        {p.unite_achat ? (
+                          <span className="text-muted-foreground/70"> · pedir en {p.unite_achat}</span>
+                        ) : null}
                       </div>
                     </div>
                     <div className="flex items-center gap-1.5">
@@ -167,7 +171,7 @@ export function NuevoPedidoModal({ productos, fournisseurs, onClose }: Props) {
                         placeholder="—"
                         className="h-8 w-20 rounded-lg border border-border bg-background px-2 text-right font-mono text-sm outline-none transition focus:border-ring"
                       />
-                      <span className="text-[11px] text-muted-foreground/70">{p.unite}</span>
+                      <span className="text-[11px] text-muted-foreground/70">{p.unite_achat ?? p.unite}</span>
                     </div>
                   </div>
                 )

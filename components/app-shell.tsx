@@ -13,9 +13,7 @@ const NAV: Record<Role, NavItem[]> = {
   patron: [
     { href: '/dashboard', label: 'Panel', icon: 'dashboard' },
     { href: '/stock', label: 'Stock', icon: 'box' },
-    { href: '/entrees', label: 'Entradas', icon: 'arrowDown' },
-    { href: '/sorties', label: 'Salidas', icon: 'arrowUp' },
-    { href: '/mouvements', label: 'Historial', icon: 'trend' },
+    { href: '/mouvements', label: 'Movimientos', icon: 'trend' },
     { href: '/demandes', label: 'Solicitudes', icon: 'clipboard' },
     { href: '/pedidos', label: 'Pedidos', icon: 'cart' },
     { href: '/utilisateurs', label: 'Usuarios', icon: 'users' },
@@ -23,9 +21,7 @@ const NAV: Record<Role, NavItem[]> = {
   gestionnaire: [
     { href: '/dashboard', label: 'Panel', icon: 'dashboard' },
     { href: '/stock', label: 'Stock', icon: 'box' },
-    { href: '/entrees', label: 'Entradas', icon: 'arrowDown' },
-    { href: '/sorties', label: 'Salidas', icon: 'arrowUp' },
-    { href: '/mouvements', label: 'Historial', icon: 'trend' },
+    { href: '/mouvements', label: 'Movimientos', icon: 'trend' },
     { href: '/demandes', label: 'Solicitudes', icon: 'clipboard' },
     { href: '/pedidos', label: 'Pedidos', icon: 'cart' },
   ],
@@ -105,27 +101,6 @@ export function AppShell({
             )
           })}
         </nav>
-
-        <div className="mt-auto flex flex-col gap-2">
-          <div className="flex items-center gap-2.5 rounded-lg bg-secondary p-2.5">
-            <span className="grid size-8 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
-              {initials(nom)}
-            </span>
-            <div className="flex min-w-0 flex-col leading-tight">
-              <strong className="truncate text-[13px] font-semibold">{nom}</strong>
-              <span className="text-[11px] text-muted-foreground">{ROLE_LABEL[role]}</span>
-            </div>
-          </div>
-          <form action={logout}>
-            <button
-              type="submit"
-              className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-sm font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground"
-            >
-              <Icon name="logout" size={19} />
-              <span>Cerrar sesión</span>
-            </button>
-          </form>
-        </div>
       </aside>
 
       {/* Scrim mobile */}
@@ -150,6 +125,28 @@ export function AppShell({
           <span className="text-sm font-semibold tracking-tight">
             {current?.label ?? 'Mise en Place'}
           </span>
+
+          <div className="ml-auto flex items-center gap-2 sm:gap-3">
+            <div className="flex items-center gap-2.5">
+              <span className="grid size-8 place-items-center rounded-full bg-primary text-xs font-bold text-primary-foreground">
+                {initials(nom)}
+              </span>
+              <div className="hidden min-w-0 flex-col leading-tight sm:flex">
+                <strong className="truncate text-[13px] font-semibold">{nom}</strong>
+                <span className="text-[11px] text-muted-foreground">{ROLE_LABEL[role]}</span>
+              </div>
+            </div>
+            <form action={logout}>
+              <button
+                type="submit"
+                title="Cerrar sesión"
+                className="flex items-center gap-2 rounded-lg border border-border px-2.5 py-2 text-sm font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+              >
+                <Icon name="logout" size={18} />
+                <span className="hidden md:inline">Cerrar sesión</span>
+              </button>
+            </form>
+          </div>
         </header>
         <main className="flex-1 overflow-y-auto">{children}</main>
       </div>

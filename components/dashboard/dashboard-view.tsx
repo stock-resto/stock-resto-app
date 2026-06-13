@@ -82,6 +82,7 @@ export function DashboardView({
   alertaCount,
   agotadoCount,
   enEsperaCount,
+  pedidosEnCurso,
   enAlerta,
   pendientes,
   recientes,
@@ -92,6 +93,7 @@ export function DashboardView({
   alertaCount: number
   agotadoCount: number
   enEsperaCount: number
+  pedidosEnCurso: number
   enAlerta: ProduitAlerta[]
   pendientes: DemandeResumen[]
   recientes: MouvementRecent[]
@@ -142,12 +144,12 @@ export function DashboardView({
           href="/demandes"
         />
         <StatCard
-          icon="box"
-          label="Agotados"
-          value={String(agotadoCount)}
-          sub={agotadoCount === 1 ? 'producto' : 'productos'}
-          color={agotadoCount > 0 ? 'red' : 'muted'}
-          href="/stock"
+          icon="cart"
+          label="Pedidos en curso"
+          value={String(pedidosEnCurso)}
+          sub="con proveedores"
+          color={pedidosEnCurso > 0 ? 'blue' : 'muted'}
+          href="/pedidos"
         />
       </div>
 
@@ -204,33 +206,44 @@ export function DashboardView({
                 <span className="text-sm">Todo el stock en orden</span>
               </div>
             ) : (
-              <div className="flex flex-col divide-y divide-border">
-                {enAlerta.slice(0, 5).map((p) => {
-                  const agotado = p.stock_actuel === 0
-                  return (
-                    <div key={p.nom} className="flex items-center gap-3 px-5 py-3.5">
-                      <div className="flex min-w-0 flex-1 flex-col">
-                        <span className="truncate font-medium">{p.nom}</span>
-                        <span className="text-xs text-muted-foreground">
-                          Mínimo: {p.stock_minimum} {p.unite}
+              <>
+                <div className="flex flex-col divide-y divide-border">
+                  {enAlerta.slice(0, 5).map((p) => {
+                    const agotado = p.stock_actuel === 0
+                    return (
+                      <div key={p.nom} className="flex items-center gap-3 px-5 py-3.5">
+                        <div className="flex min-w-0 flex-1 flex-col">
+                          <span className="truncate font-medium">{p.nom}</span>
+                          <span className="text-xs text-muted-foreground">
+                            Mínimo: {p.stock_minimum} {p.unite}
+                          </span>
+                        </div>
+                        <span className={`font-mono text-sm font-semibold ${agotado ? 'text-destructive' : 'text-[var(--warn)]'}`}>
+                          {p.stock_actuel} {p.unite}
+                        </span>
+                        <span
+                          className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                            agotado
+                              ? 'bg-destructive/10 text-destructive'
+                              : 'bg-[color-mix(in_oklch,var(--warn)_15%,transparent)] text-[var(--warn)]'
+                          }`}
+                        >
+                          {agotado ? 'Agotado' : 'Stock bajo'}
                         </span>
                       </div>
-                      <span className={`font-mono text-sm font-semibold ${agotado ? 'text-destructive' : 'text-[var(--warn)]'}`}>
-                        {p.stock_actuel} {p.unite}
-                      </span>
-                      <span
-                        className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          agotado
-                            ? 'bg-destructive/10 text-destructive'
-                            : 'bg-[color-mix(in_oklch,var(--warn)_15%,transparent)] text-[var(--warn)]'
-                        }`}
-                      >
-                        {agotado ? 'Agotado' : 'Stock bajo'}
-                      </span>
-                    </div>
-                  )
-                })}
-              </div>
+                    )
+                  })}
+                </div>
+                <div className="mt-auto border-t border-border p-3">
+                  <Link
+                    href="/pedidos/preparar"
+                    className="flex items-center justify-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground shadow-sm transition hover:opacity-90"
+                  >
+                    <Icon name="cart" size={17} />
+                    Preparar pedidos
+                  </Link>
+                </div>
+              </>
             )}
           </div>
 
@@ -242,7 +255,7 @@ export function DashboardView({
         <div className="flex items-center justify-between">
           <h2 className="text-base font-semibold">Movimientos recientes</h2>
           <Link href="/mouvements" className="text-sm text-primary hover:underline">
-            Ver historial →
+            Ver movimientos →
           </Link>
         </div>
         <div className="overflow-hidden rounded-xl border border-border bg-card shadow-sm">

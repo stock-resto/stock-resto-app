@@ -10,6 +10,8 @@ export type AlertaProducto = {
   id: string
   nom: string
   unite: string
+  unite_achat: string | null
+  factor_achat: number | null
   stock_actuel: number
   stock_minimum: number
   stock_maximum: number | null
@@ -19,11 +21,21 @@ export type AlertaProducto = {
 
 const INIT: PedidoState = {}
 
-// Quantité suggérée = stock_maximum − stock_actuel (sinon vide → saisie manuelle)
+// Unité dans laquelle on commande : unité d'achat si définie, sinon unité de base.
+function ordenUnidad(p: AlertaProducto): string {
+  return p.unite_achat ?? p.unite
+}
+
+// Quantité suggérée pour atteindre le stock max, exprimée dans l'unité de commande.
+// Déficit (max − actuel) en base → converti en unité d'achat (arrondi sup.) si applicable.
 function sugerencia(p: AlertaProducto): string {
   if (p.stock_maximum === null) return ''
-  const diff = p.stock_maximum - p.stock_actuel
-  return diff > 0 ? String(diff) : ''
+  const deficit = p.stock_maximum - p.stock_actuel
+  if (deficit <= 0) return ''
+  if (p.unite_achat && p.factor_achat && p.factor_achat > 0) {
+    return String(Math.ceil(deficit / p.factor_achat))
+  }
+  return String(deficit)
 }
 
 type Grupo = { fournisseur_id: string; nom: string; items: AlertaProducto[] }
@@ -131,7 +143,12 @@ export function PrepararPedidos({ alertas }: { alertas: AlertaProducto[] }) {
                     </button>
                     <div className="min-w-0 flex-1">
                       <div className="truncate text-sm font-medium">{it.nom}</div>
-                      <div className="text-[12px] text-muted-foreground">Unidad: {it.unite}</div>
+                      <div className="text-[12px] text-muted-foreground">
+                        Pedir en: {ordenUnidad(it)}
+                        {it.unite_achat && it.factor_achat ? (
+                          <span className="text-muted-foreground/70"> · ~{it.factor_achat} {it.unite}</span>
+                        ) : null}
+                      </div>
                     </div>
                     <div className="hidden text-right sm:block">
                       <div className="text-[11px] uppercase tracking-wide text-muted-foreground/70">
@@ -144,8 +161,10 @@ export function PrepararPedidos({ alertas }: { alertas: AlertaProducto[] }) {
                         <span className="text-muted-foreground"> / {it.stock_minimum} {it.unite}</span>
                       </div>
                     </div>
-                    <div className="w-28 text-right">
-                      <div className="text-[11px] uppercase tracking-wide text-muted-foreground/70">Cantidad</div>
+                    <div className="w-32 text-right">
+                      <div className="text-[11px] uppercase tracking-wide text-muted-foreground/70">
+                        Cantidad ({ordenUnidad(it)})
+                      </div>
                       <input
                         type="number"
                         min="0"
@@ -153,7 +172,7 @@ export function PrepararPedidos({ alertas }: { alertas: AlertaProducto[] }) {
                         value={qty[it.id] ?? ''}
                         onChange={(e) => setQty((p) => ({ ...p, [it.id]: e.target.value }))}
                         placeholder="—"
-                        className="mt-0.5 h-8 w-24 rounded-lg border border-border bg-background px-2 text-right font-mono text-sm outline-none transition focus:border-ring"
+                        className="mt-0.5 h-8 w-28 rounded-lg border border-border bg-background px-2 text-right font-mono text-sm outline-none transition focus:border-ring"
                       />
                     </div>
                   </div>

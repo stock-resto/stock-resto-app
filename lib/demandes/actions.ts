@@ -191,7 +191,7 @@ export async function entregarDemanda(
   if (error) return { error: 'Error al marcar como entregada.' }
 
   revalidatePath('/demandes')
-  revalidatePath('/sorties')
+  revalidatePath('/mouvements')
   revalidatePath('/stock')
   return { success: true }
 }

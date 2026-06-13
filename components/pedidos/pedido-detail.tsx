@@ -32,6 +32,8 @@ export type LineaDetail = {
   nom: string
   presentation: string | null
   unite: string
+  uniteAchat: string | null
+  factor: number
   cantidad_pedida: number
   cantidad_recibida: number
   precio: number
@@ -41,6 +43,8 @@ export type ProductoFournisseur = {
   id: string
   nom: string
   unite: string
+  uniteAchat: string | null
+  factor: number
   presentation: string | null
   precio: number
 }
@@ -50,6 +54,8 @@ type EditLinea = {
   nom: string
   presentation: string | null
   unite: string
+  uniteAchat: string | null
+  factor: number
   cantidad: string
   precio: number
 }
@@ -89,6 +95,8 @@ export function PedidoDetail({
         nom: l.nom,
         presentation: l.presentation,
         unite: l.unite,
+        uniteAchat: l.uniteAchat,
+        factor: l.factor,
         cantidad: String(l.cantidad_pedida),
         precio: l.precio,
       })),
@@ -117,9 +125,10 @@ export function PedidoDetail({
     [productosFournisseur, editLineas]
   )
 
-  // Total estimado
-  const totalBorrador = editLineas.reduce((a, l) => a + (Number(l.cantidad) || 0) * l.precio, 0)
-  const totalOtros = lineas.reduce((a, l) => a + l.cantidad_pedida * l.precio, 0)
+  // Total estimado : la cantidad está en unidad de compra → se convierte a base
+  // (× factor) para multiplicar por el precio (que es por unidad de base).
+  const totalBorrador = editLineas.reduce((a, l) => a + (Number(l.cantidad) || 0) * l.factor * l.precio, 0)
+  const totalOtros = lineas.reduce((a, l) => a + l.cantidad_pedida * l.factor * l.precio, 0)
 
   function run(fn: () => Promise<PedidoState>, after?: () => void) {
     startTransition(async () => {
@@ -182,9 +191,22 @@ export function PedidoDetail({
     run(() => eliminarPedido({}, fd), () => router.push('/pedidos'))
   }
 
+  // Pendiente calculé en unité de base : pedida (× facteur si unité d'achat) − reçu.
+  // La réception se saisit toujours en unité de base.
   const pendientes: LineaPendiente[] = lineas
-    .filter((l) => l.cantidad_pedida - l.cantidad_recibida > 0)
-    .map((l) => ({ id: l.id, nom: l.nom, unite: l.unite, pendiente: l.cantidad_pedida - l.cantidad_recibida }))
+    .map((l) => {
+      const pedidaEnBase = l.cantidad_pedida * l.factor
+      const pendiente = pedidaEnBase - l.cantidad_recibida
+      return {
+        id: l.id,
+        nom: l.nom,
+        unite: l.unite,
+        pendiente,
+        pedidaLabel: `${l.cantidad_pedida} ${l.uniteAchat ?? l.unite}`,
+        aprox: !!l.uniteAchat,
+      }
+    })
+    .filter((l) => l.pendiente > 0)
 
   return (
     <div className="mx-auto flex max-w-[1000px] flex-col gap-[18px] px-5 py-7 md:px-8">
@@ -257,7 +279,7 @@ export function PedidoDetail({
                               }
                               className="h-8 w-20 rounded-lg border border-border bg-background px-2 text-right font-mono text-sm outline-none transition focus:border-ring"
                             />
-                            <span className="text-[11px] text-muted-foreground/70">{l.unite}</span>
+                            <span className="text-[11px] text-muted-foreground/70">{l.uniteAchat ?? l.unite}</span>
                           </div>
                         </td>
                         {isPatron && (
@@ -267,7 +289,7 @@ export function PedidoDetail({
                         )}
                         {isPatron && (
                           <td className="px-4 py-2.5 text-right font-mono text-[13px] font-semibold">
-                            {money((Number(l.cantidad) || 0) * l.precio)}
+                            {money((Number(l.cantidad) || 0) * l.factor * l.precio)}
                           </td>
                         )}
                         <td className="px-3 py-2.5 text-right">
@@ -297,7 +319,7 @@ export function PedidoDetail({
                     if (!p) return
                     setEditLineas((prev) => [
                       ...prev,
-                      { produit_id: p.id, nom: p.nom, presentation: p.presentation, unite: p.unite, cantidad: '', precio: p.precio },
+                      { produit_id: p.id, nom: p.nom, presentation: p.presentation, unite: p.unite, uniteAchat: p.uniteAchat, factor: p.factor, cantidad: '', precio: p.precio },
                     ])
                   }}
                   className="h-9 rounded-lg border border-border bg-background px-2.5 text-sm text-muted-foreground outline-none transition focus:border-ring"
@@ -398,20 +420,34 @@ export function PedidoDetail({
                 </thead>
                 <tbody>
                   {lineas.map((l) => {
-                    const pend = l.cantidad_pedida - l.cantidad_recibida
+                    const pedidaEnBase = l.cantidad_pedida * l.factor
+                    const pend = pedidaEnBase - l.cantidad_recibida
+                    const tieneCompra = !!l.uniteAchat
                     return (
                       <tr key={l.id} className="border-b border-border last:border-0">
                         <td className="px-4 py-2.5 font-medium">{l.nom}</td>
                         <td className="px-4 py-2.5 text-muted-foreground">{l.presentation ?? '—'}</td>
-                        <td className="px-4 py-2.5 text-right font-mono font-semibold">{l.cantidad_pedida}</td>
+                        <td className="px-4 py-2.5 text-right font-mono font-semibold">
+                          {l.cantidad_pedida}{' '}
+                          <span className="font-sans text-[11px] text-muted-foreground/70">{l.uniteAchat ?? l.unite}</span>
+                          {tieneCompra && (
+                            <div className="font-sans text-[11px] font-normal text-muted-foreground/60">
+                              ≈ {pedidaEnBase} {l.unite}
+                            </div>
+                          )}
+                        </td>
                         <td
                           className="px-4 py-2.5 text-right font-mono font-semibold"
                           style={{ color: l.cantidad_recibida ? 'var(--ok)' : 'var(--muted-foreground)' }}
                         >
-                          {l.cantidad_recibida}
+                          {l.cantidad_recibida}{' '}
+                          <span className="font-sans text-[11px] text-muted-foreground/70">{l.unite}</span>
                         </td>
                         <td className="px-4 py-2.5 text-right font-mono font-bold">
-                          <span className={pend > 0 ? 'text-[var(--warn)]' : 'text-muted-foreground/50'}>{pend}</span>
+                          <span className={pend > 0 ? 'text-[var(--warn)]' : 'text-muted-foreground/50'}>
+                            {pend}
+                          </span>{' '}
+                          <span className="font-sans text-[11px] font-normal text-muted-foreground/70">{l.unite}</span>
                         </td>
                       </tr>
                     )

@@ -70,12 +70,19 @@ export async function upsertProducto(
   )
   if (four.error) return { error: four.error }
 
+  // Unité d'achat optionnelle (Modèle A) : vide => produit mono-unité.
+  const uniteAchat = String(formData.get('unite_achat') ?? '').trim() || null
+  const factorRaw = Number(formData.get('factor_achat'))
+  const factorAchat = uniteAchat && factorRaw > 0 ? factorRaw : null
+
   const payload = {
     categorie_id: cat.id,
     fournisseur_id: four.id,
     nom,
     presentation: (formData.get('presentation') as string) || null,
     unite,
+    unite_achat: uniteAchat,
+    factor_achat: factorAchat,
     stock_minimum: Number(formData.get('stock_minimum') ?? 0),
     stock_maximum: formData.get('stock_maximum') ? Number(formData.get('stock_maximum')) : null,
     valeur_unitaire: Number(formData.get('valeur_unitaire') ?? 0),
@@ -158,7 +165,7 @@ export async function registrarEntrada(
   )
   if (error) return { error: 'Error al registrar las entradas.' }
 
-  revalidatePath('/entrees')
+  revalidatePath('/mouvements')
   revalidatePath('/stock')
   return { success: true }
 }
@@ -196,7 +203,7 @@ export async function registrarSortida(
   )
   if (error) return { error: 'Error al registrar las salidas.' }
 
-  revalidatePath('/sorties')
+  revalidatePath('/mouvements')
   revalidatePath('/stock')
   return { success: true }
 }
@@ -248,8 +255,7 @@ export async function editarMovimiento(
     }
   }
 
-  revalidatePath('/entrees')
-  revalidatePath('/sorties')
+  revalidatePath('/mouvements')
   revalidatePath('/stock')
   return { success: true }
 }
@@ -295,8 +301,7 @@ export async function eliminarMovimiento(
       .eq('restaurant_id', profile.restaurant_id)
   }
 
-  revalidatePath('/entrees')
-  revalidatePath('/sorties')
+  revalidatePath('/mouvements')
   revalidatePath('/stock')
   return { success: true }
 }

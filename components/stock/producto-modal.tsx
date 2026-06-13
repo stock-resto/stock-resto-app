@@ -178,6 +178,43 @@ export function ProductoModal({
                 </Field>
               </div>
 
+              {/* Unidad de compra (opcional) — solo pedidos, nunca el stock */}
+              <div className="rounded-lg border border-dashed border-border bg-secondary/30 p-3.5">
+                <div className="mb-1.5 flex items-center gap-2">
+                  <Icon name="cart" size={15} className="text-muted-foreground" />
+                  <span className="text-[12.5px] font-semibold">
+                    Unidad de compra <span className="font-normal text-muted-foreground">(opcional)</span>
+                  </span>
+                </div>
+                <p className="mb-3 text-[11.5px] leading-snug text-muted-foreground">
+                  Si compras en otra unidad (caja, cagette…) pero almacenas y consumes en la unidad
+                  de arriba. El factor es indicativo: ≈ cuántas unidades de uso trae una de compra.
+                  Solo afecta los pedidos, nunca el stock.
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Unidad de compra">
+                    <Combobox
+                      name="unite_achat"
+                      options={['caja', 'cagette', 'saco', 'bolsa', 'bulto']}
+                      defaultValue={produit?.unite_achat ?? ''}
+                      placeholder="caja, cagette…"
+                      className={inputCls}
+                    />
+                  </Field>
+                  <Field label="≈ unidades de uso por compra">
+                    <input
+                      type="number"
+                      name="factor_achat"
+                      min="0"
+                      step="0.01"
+                      defaultValue={produit?.factor_achat ?? ''}
+                      placeholder="ej. 12"
+                      className={`${inputCls} font-mono`}
+                    />
+                  </Field>
+                </div>
+              </div>
+
               {/* Categoría | Proveedor — escribe uno nuevo para crearlo */}
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Categoría">

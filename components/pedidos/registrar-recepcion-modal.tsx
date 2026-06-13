@@ -10,6 +10,8 @@ export type LineaPendiente = {
   nom: string
   unite: string
   pendiente: number
+  pedidaLabel: string
+  aprox: boolean
 }
 
 type Props = {
@@ -91,13 +93,16 @@ export function RegistrarRecepcionModal({ pedidoId, numero, lineas, onClose }: P
               <div key={l.id} className="flex items-center gap-3 border-b border-border py-3 last:border-0">
                 <div className="min-w-0 flex-1">
                   <div className="truncate text-sm font-medium">{l.nom}</div>
+                  <div className="text-[12px] text-muted-foreground">
+                    Pedido: {l.pedidaLabel}
+                  </div>
                   <div className="text-[12px] font-medium text-[var(--warn)]">
-                    Pendiente: {l.pendiente} {l.unite}
+                    Pendiente: {l.aprox ? '≈ ' : ''}{l.pendiente} {l.unite}
                   </div>
                 </div>
                 <div className="text-right">
                   <div className="text-[11px] uppercase tracking-wide text-muted-foreground/70">
-                    Recibir ahora
+                    Recibir ({l.unite})
                   </div>
                   <input
                     type="number"

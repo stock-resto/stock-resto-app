@@ -87,6 +87,7 @@ export function StockTable({
   }, [produits, query, cat])
 
   const lowCount = produits.filter((p) => stockStatus(p) !== 'ok').length
+  const outCount = produits.filter((p) => stockStatus(p) === 'out').length
   const totalValue = produits.reduce((s, p) => s + p.stock_actuel * p.valeur_unitaire, 0)
 
   return (
@@ -111,7 +112,7 @@ export function StockTable({
         </div>
 
         {/* Stat cards */}
-        <div className="grid grid-cols-2 gap-3.5 md:grid-cols-3">
+        <div className={'grid grid-cols-2 gap-3.5 ' + (canSeeFinance ? 'lg:grid-cols-4' : 'md:grid-cols-3')}>
           <StatCard
             icon="box"
             tone="neutral"
@@ -125,6 +126,13 @@ export function StockTable({
             label="Productos en alerta"
             value={String(lowCount)}
             foot="alertas de stock"
+          />
+          <StatCard
+            icon="box"
+            tone={outCount ? 'danger' : 'ok'}
+            label="Productos agotados"
+            value={String(outCount)}
+            foot={outCount === 1 ? 'producto' : 'productos'}
           />
           {canSeeFinance && (
             <StatCard
@@ -370,7 +378,7 @@ function StatCard({
   foot,
 }: {
   icon: 'box' | 'alert' | 'trend'
-  tone: 'neutral' | 'warn' | 'ok' | 'accent'
+  tone: 'neutral' | 'warn' | 'ok' | 'accent' | 'danger'
   label: string
   value: string
   foot?: string
@@ -380,6 +388,7 @@ function StatCard({
     warn: 'text-[var(--warn)] bg-[color-mix(in_oklch,var(--warn)_16%,transparent)]',
     ok: 'text-[var(--ok)] bg-[color-mix(in_oklch,var(--ok)_13%,transparent)]',
     accent: 'text-primary bg-primary/10',
+    danger: 'text-destructive bg-destructive/10',
   }[tone]
   return (
     <div className="flex items-start gap-3.5 rounded-xl border border-border bg-card p-[17px] shadow-sm">

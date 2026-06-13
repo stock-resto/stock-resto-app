@@ -5,6 +5,8 @@ type ProdRow = {
   id: string
   nom: string
   unite: string
+  unite_achat: string | null
+  factor_achat: number | null
   stock_actuel: number
   stock_minimum: number
   stock_maximum: number | null
@@ -17,7 +19,7 @@ export default async function PrepararPedidosPage() {
 
   const { data } = await supabase
     .from('produits')
-    .select('id, nom, unite, stock_actuel, stock_minimum, stock_maximum, fournisseur_id, fournisseur:fournisseur_id(nom)')
+    .select('id, nom, unite, unite_achat, factor_achat, stock_actuel, stock_minimum, stock_maximum, fournisseur_id, fournisseur:fournisseur_id(nom)')
     .eq('actif', true)
     .order('nom')
 
@@ -28,6 +30,8 @@ export default async function PrepararPedidosPage() {
       id: p.id,
       nom: p.nom,
       unite: p.unite,
+      unite_achat: p.unite_achat ?? null,
+      factor_achat: p.factor_achat != null ? Number(p.factor_achat) : null,
       stock_actuel: Number(p.stock_actuel),
       stock_minimum: Number(p.stock_minimum),
       stock_maximum: p.stock_maximum === null ? null : Number(p.stock_maximum),
