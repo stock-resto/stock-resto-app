@@ -15,12 +15,12 @@ export default async function DemandesPage() {
         id, numero, statut, note, created_at, traite_at, livre_at,
         cuisinier:cuisinier_id(nom),
         gestionnaire:gestionnaire_id(nom),
-        demande_lignes(id, produit_id, quantite, quantite_livree, produits(nom, unite))
+        demande_lignes(id, produit_id, quantite, quantite_livree, produits(nom, unite, unite_uso, factor_uso))
       `)
       .order('created_at', { ascending: false }),
     supabase
       .from('produits')
-      .select('id, nom, unite, stock_actuel, stock_minimum')
+      .select('id, nom, unite, unite_uso, factor_uso, stock_actuel, stock_minimum')
       .eq('actif', true)
       .order('nom'),
   ])

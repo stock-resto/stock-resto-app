@@ -3,7 +3,10 @@
 import { useMemo, useState } from 'react'
 import { Icon } from '@/components/icon'
 import { day, dateTime } from '@/lib/format'
+import { displayQty } from '@/lib/units'
 import type { DemandeRow } from '@/components/demandes/demandes-list'
+
+const NO_UNITS = { unite: '', unite_uso: null, factor_uso: null }
 
 const STATUT = {
   en_attente: {
@@ -172,7 +175,10 @@ function DetailSheet({ d, onClose }: { d: DemandeRow; onClose: () => void }) {
 
         <div className="flex flex-col overflow-y-auto">
           {d.demande_lignes.map((l) => {
+            const u = l.produits ?? NO_UNITS
             const livree = d.statut === 'livree' && l.quantite_livree != null
+            const sol = displayQty(l.quantite, u)
+            const ent = displayQty(l.quantite_livree ?? l.quantite, u)
             return (
               <div
                 key={l.id}
@@ -182,9 +188,9 @@ function DetailSheet({ d, onClose }: { d: DemandeRow; onClose: () => void }) {
                   {l.produits?.nom ?? '—'}
                 </span>
                 <span className="font-mono text-[15px] font-bold">
-                  {livree ? `${l.quantite_livree}/${l.quantite}` : l.quantite}
+                  {livree ? `${ent.value}/${sol.value}` : sol.value}
                   <em className="ml-0.5 text-[11px] font-medium not-italic text-muted-foreground/70">
-                    {l.produits?.unite}
+                    {sol.unit}
                   </em>
                 </span>
               </div>

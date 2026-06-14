@@ -4,6 +4,7 @@ import { useEffect, useCallback, useState, useMemo } from 'react'
 import { useActionState } from 'react'
 import { Icon } from '@/components/icon'
 import { editarDemanda, type DemandaState } from '@/lib/demandes/actions'
+import { toBase, tieneUso, baseToUso, displayQty } from '@/lib/units'
 import type { ProductoOption } from '@/components/stock/entrada-modal'
 import type { DemandeRow } from './demandes-list'
 
@@ -18,12 +19,17 @@ const INIT: DemandaState = {}
 export function EditarDemandaModal({ demande, produits, onClose }: Props) {
   const [state, formAction, isPending] = useActionState(editarDemanda, INIT)
   const [search, setSearch] = useState('')
+  const [units, setUnits] = useState<Record<string, 'base' | 'uso'>>({})
 
-  // Pré-remplir avec les quantités existantes
+  const unitOf = (p: ProductoOption): 'base' | 'uso' =>
+    units[p.id] ?? (tieneUso(p) ? 'uso' : 'base')
+
+  // Pré-remplir avec les quantités existantes, affichées en présentation d'usage.
   const [quantities, setQuantities] = useState<Record<string, string>>(() => {
     const init: Record<string, string> = {}
     for (const l of demande.demande_lignes) {
-      init[l.produit_id] = String(l.quantite)
+      const p = produits.find((x) => x.id === l.produit_id)
+      init[l.produit_id] = String(p ? displayQty(l.quantite, p).value : l.quantite)
     }
     return init
   })
@@ -35,10 +41,15 @@ export function EditarDemandaModal({ demande, produits, onClose }: Props) {
 
   const selectedCount = Object.values(quantities).filter((q) => Number(q) > 0).length
 
+  // Reconverti en unité de base (kg) avant envoi.
   const lignesJson = JSON.stringify(
     Object.entries(quantities)
       .filter(([, q]) => Number(q) > 0)
-      .map(([produit_id, q]) => ({ produit_id, quantite: Number(q) }))
+      .map(([produit_id, q]) => {
+        const p = produits.find((x) => x.id === produit_id)
+        const u = units[produit_id] ?? (p && tieneUso(p) ? 'uso' : 'base')
+        return { produit_id, quantite: toBase(Number(q), u, p?.factor_uso ?? null) }
+      })
   )
 
   useEffect(() => {
@@ -120,6 +131,8 @@ export function EditarDemandaModal({ demande, produits, onClose }: Props) {
             {filtered.map((p) => {
               const qty = quantities[p.id] ?? ''
               const hasQty = Number(qty) > 0
+              const unit = unitOf(p)
+              const conUso = tieneUso(p)
               return (
                 <div
                   key={p.id}
@@ -130,21 +143,36 @@ export function EditarDemandaModal({ demande, produits, onClose }: Props) {
                 >
                   <span className="flex-1 text-sm font-medium">{p.nom}</span>
                   <span className="w-28 text-right font-mono text-[13px] text-muted-foreground">
-                    {p.stock_actuel} {p.unite}
+                    {conUso ? `${baseToUso(p.stock_actuel, p.factor_uso)} ${p.unite_uso}` : `${p.stock_actuel} ${p.unite}`}
                   </span>
-                  <div className="flex w-28 items-center justify-end gap-1.5">
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={qty}
-                      onChange={(e) =>
-                        setQuantities((prev) => ({ ...prev, [p.id]: e.target.value }))
-                      }
-                      placeholder="—"
-                      className="h-8 w-20 rounded-lg border border-border bg-background px-2 text-right text-sm font-mono outline-none focus:border-ring transition"
-                    />
-                    <span className="text-[11px] text-muted-foreground/70">{p.unite}</span>
+                  <div className="flex w-32 flex-col items-end gap-0.5">
+                    <div className="flex items-center gap-1.5">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={qty}
+                        onChange={(e) =>
+                          setQuantities((prev) => ({ ...prev, [p.id]: e.target.value }))
+                        }
+                        placeholder="—"
+                        className="h-8 w-20 rounded-lg border border-border bg-background px-2 text-right text-sm font-mono outline-none focus:border-ring transition"
+                      />
+                      {conUso ? (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setUnits((prev) => ({ ...prev, [p.id]: unit === 'uso' ? 'base' : 'uso' }))
+                          }
+                          className="min-w-[42px] rounded-md border border-border px-1.5 py-1 text-[11px] font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+                          title="Cambiar unidad"
+                        >
+                          {unit === 'uso' ? p.unite_uso : p.unite}
+                        </button>
+                      ) : (
+                        <span className="min-w-[42px] text-[11px] text-muted-foreground/70">{p.unite}</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               )

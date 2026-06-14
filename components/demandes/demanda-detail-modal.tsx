@@ -10,8 +10,15 @@ import {
   type DemandaState,
 } from '@/lib/demandes/actions'
 import { dateTime } from '@/lib/format'
-import type { DemandeRow } from './demandes-list'
+import { toBase, baseToUso, tieneUso, displayQty } from '@/lib/units'
+import type { DemandeRow, DemandeLigneRow } from './demandes-list'
 import type { Role } from '@/types/database'
+
+const NO_UNITS = { unite: '', unite_uso: null, factor_uso: null }
+// Unités d'une ligne (depuis le produit joint), avec fallback sûr.
+function lineUnits(l: DemandeLigneRow) {
+  return l.produits ?? NO_UNITS
+}
 
 type Props = {
   demande: DemandeRow
@@ -34,20 +41,26 @@ export function DemandaDetailModal({ demande, role, onClose, onEdit }: Props) {
   const [rechazarState, rechazarAction, rechazarPending] = useActionState(rechazarDemanda, INIT)
   const [entregarState, entregarAction, entregarPending] = useActionState(entregarDemanda, INIT)
 
-  // Cantidades livrées (pre-rellenas con la cantidad solicitada)
+  // Cantidades livrées, saisies dans l'unité d'affichage (sacs si dispo),
+  // pré-remplies avec la quantité solicitada.
   const [livrees, setLivrees] = useState<Record<string, string>>(() =>
-    Object.fromEntries(demande.demande_lignes.map((l) => [l.id, String(l.quantite)]))
+    Object.fromEntries(
+      demande.demande_lignes.map((l) => [l.id, String(displayQty(l.quantite, lineUnits(l)).value)])
+    )
   )
 
   const isPending = aprobarPending || rechazarPending || entregarPending
   const error = aprobarState.error ?? rechazarState.error ?? entregarState.error
   const canAct = role !== 'cuisinier'
 
+  // Reconverti en unité de base (kg) pour le mouvement de sortie (trigger).
   const livreesJson = JSON.stringify(
-    demande.demande_lignes.map((l) => ({
-      ligne_id: l.id,
-      quantite_livree: Math.max(0.01, Number(livrees[l.id] ?? l.quantite)),
-    }))
+    demande.demande_lignes.map((l) => {
+      const u = lineUnits(l)
+      const saisie = Number(livrees[l.id] ?? displayQty(l.quantite, u).value)
+      const base = toBase(saisie, tieneUso(u) ? 'uso' : 'base', u.factor_uso)
+      return { ligne_id: l.id, quantite_livree: Math.max(0.01, base) }
+    })
   )
 
   useEffect(() => {
@@ -125,44 +138,47 @@ export function DemandaDetailModal({ demande, role, onClose, onEdit }: Props) {
                   </tr>
                 </thead>
                 <tbody>
-                  {demande.demande_lignes.map((l) => (
-                    <tr key={l.id} className="border-t border-border">
-                      <td className="px-4 py-2.5 font-medium">{l.produits?.nom ?? '—'}</td>
-                      <td className="px-4 py-2.5 text-right font-mono text-[13px]">
-                        {l.quantite}
-                        <em className="ml-0.5 not-italic text-[11px] text-muted-foreground/70">
-                          {l.produits?.unite}
-                        </em>
-                      </td>
-                      {isEntrega && (
-                        <td className="px-4 py-2">
-                          <div className="flex items-center justify-end gap-1">
-                            <input
-                              type="number"
-                              min="0.01"
-                              step="0.01"
-                              value={livrees[l.id] ?? l.quantite}
-                              onChange={(e) =>
-                                setLivrees((prev) => ({ ...prev, [l.id]: e.target.value }))
-                              }
-                              className="h-8 w-20 rounded-lg border border-border bg-background px-2 text-right text-sm font-mono outline-none focus:border-ring transition"
-                            />
-                            <span className="text-[11px] text-muted-foreground/70">
-                              {l.produits?.unite}
-                            </span>
-                          </div>
-                        </td>
-                      )}
-                      {demande.statut === 'livree' && (
-                        <td className="px-4 py-2.5 text-right font-mono text-[13px] font-semibold text-[var(--ok)]">
-                          {l.quantite_livree ?? l.quantite}
+                  {demande.demande_lignes.map((l) => {
+                    const u = lineUnits(l)
+                    const sol = displayQty(l.quantite, u)
+                    const ent = displayQty(l.quantite_livree ?? l.quantite, u)
+                    return (
+                      <tr key={l.id} className="border-t border-border">
+                        <td className="px-4 py-2.5 font-medium">{l.produits?.nom ?? '—'}</td>
+                        <td className="px-4 py-2.5 text-right font-mono text-[13px]">
+                          {sol.value}
                           <em className="ml-0.5 not-italic text-[11px] text-muted-foreground/70">
-                            {l.produits?.unite}
+                            {sol.unit}
                           </em>
                         </td>
-                      )}
-                    </tr>
-                  ))}
+                        {isEntrega && (
+                          <td className="px-4 py-2">
+                            <div className="flex items-center justify-end gap-1">
+                              <input
+                                type="number"
+                                min="0.01"
+                                step="0.01"
+                                value={livrees[l.id] ?? sol.value}
+                                onChange={(e) =>
+                                  setLivrees((prev) => ({ ...prev, [l.id]: e.target.value }))
+                                }
+                                className="h-8 w-20 rounded-lg border border-border bg-background px-2 text-right text-sm font-mono outline-none focus:border-ring transition"
+                              />
+                              <span className="text-[11px] text-muted-foreground/70">{sol.unit}</span>
+                            </div>
+                          </td>
+                        )}
+                        {demande.statut === 'livree' && (
+                          <td className="px-4 py-2.5 text-right font-mono text-[13px] font-semibold text-[var(--ok)]">
+                            {ent.value}
+                            <em className="ml-0.5 not-italic text-[11px] text-muted-foreground/70">
+                              {ent.unit}
+                            </em>
+                          </td>
+                        )}
+                      </tr>
+                    )
+                  })}
                 </tbody>
               </table>
             </div>

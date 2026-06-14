@@ -11,7 +11,12 @@ import {
 } from '@/lib/stock/actions'
 import type { ProduitRow } from './stock-table'
 
-const UNIT_OPTS = ['kg', 'g', 'L', 'mL', 'unidad', 'docena', 'caja', 'bolsa', 'saco']
+// Unité de MESURE de base (ce qui ne change pas : on compte le stock ici).
+const MEASURE_OPTS = ['kg', 'g', 'L', 'mL', 'unidad']
+// Présentation d'usage : comment on stocke/consomme (le cuisinier commande ici).
+const USO_OPTS = ['saco', 'bolsa', 'caja', 'bandeja', 'porción', 'unidad']
+// Présentation d'achat : comment on achète au fournisseur (pedidos).
+const COMPRA_OPTS = ['caja', 'cagette', 'saco', 'bulto', 'costal']
 
 type Props = {
   mode: 'create' | 'edit'
@@ -156,26 +161,55 @@ export function ProductoModal({
                 />
               </Field>
 
-              {/* Unidad | Presentación */}
-              <div className="grid grid-cols-2 gap-4">
-                <Field label="Unidad *">
-                  <Combobox
-                    name="unite"
-                    required
-                    options={UNIT_OPTS}
-                    defaultValue={produit?.unite ?? ''}
-                    placeholder="kg, L, unidad…"
-                    className={inputCls}
-                  />
-                </Field>
-                <Field label="Presentación">
-                  <input
-                    name="presentation"
-                    defaultValue={produit?.presentation ?? ''}
-                    placeholder="caja, saco, tarima…"
-                    className={inputCls}
-                  />
-                </Field>
+              {/* Unidad de medida base (el invariante : aquí se cuenta el stock) */}
+              <Field label="Unidad de medida *">
+                <Combobox
+                  name="unite"
+                  required
+                  options={MEASURE_OPTS}
+                  defaultValue={produit?.unite ?? ''}
+                  placeholder="kg, L, unidad…"
+                  className={inputCls}
+                />
+                <span className="text-[11px] text-muted-foreground/70">
+                  La unidad real en la que se mide y se cuenta el stock (lo que no cambia).
+                </span>
+              </Field>
+
+              {/* Presentación de uso (opcional) — almacenamiento/consumo */}
+              <div className="rounded-lg border border-dashed border-border bg-secondary/30 p-3.5">
+                <div className="mb-1.5 flex items-center gap-2">
+                  <Icon name="box" size={15} className="text-muted-foreground" />
+                  <span className="text-[12.5px] font-semibold">
+                    Presentación de uso <span className="font-normal text-muted-foreground">(opcional)</span>
+                  </span>
+                </div>
+                <p className="mb-3 text-[11.5px] leading-snug text-muted-foreground">
+                  Cómo se almacena y se consume (ej. saco). El cocinero pide en esta presentación.
+                  El factor = cuántas unidades de medida hay en 1 (ej. 1 saco = 1 kg).
+                </p>
+                <div className="grid grid-cols-2 gap-4">
+                  <Field label="Presentación de uso">
+                    <Combobox
+                      name="unite_uso"
+                      options={USO_OPTS}
+                      defaultValue={produit?.unite_uso ?? ''}
+                      placeholder="saco, bolsa…"
+                      className={inputCls}
+                    />
+                  </Field>
+                  <Field label="Unidades de medida por 1">
+                    <input
+                      type="number"
+                      name="factor_uso"
+                      min="0"
+                      step="0.01"
+                      defaultValue={produit?.factor_uso ?? ''}
+                      placeholder="ej. 1"
+                      className={`${inputCls} font-mono`}
+                    />
+                  </Field>
+                </div>
               </div>
 
               {/* Unidad de compra (opcional) — solo pedidos, nunca el stock */}
@@ -187,21 +221,20 @@ export function ProductoModal({
                   </span>
                 </div>
                 <p className="mb-3 text-[11.5px] leading-snug text-muted-foreground">
-                  Si compras en otra unidad (caja, cagette…) pero almacenas y consumes en la unidad
-                  de arriba. El factor es indicativo: ≈ cuántas unidades de uso trae una de compra.
-                  Solo afecta los pedidos, nunca el stock.
+                  Cómo lo compras al proveedor (ej. cagette). Solo afecta los pedidos, nunca el stock.
+                  El factor = cuántas unidades de medida trae 1 (ej. 1 cagette = 12 kg).
                 </p>
                 <div className="grid grid-cols-2 gap-4">
                   <Field label="Unidad de compra">
                     <Combobox
                       name="unite_achat"
-                      options={['caja', 'cagette', 'saco', 'bolsa', 'bulto']}
+                      options={COMPRA_OPTS}
                       defaultValue={produit?.unite_achat ?? ''}
                       placeholder="caja, cagette…"
                       className={inputCls}
                     />
                   </Field>
-                  <Field label="≈ unidades de uso por compra">
+                  <Field label="Unidades de medida por 1">
                     <input
                       type="number"
                       name="factor_achat"

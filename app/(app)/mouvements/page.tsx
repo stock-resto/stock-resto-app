@@ -18,7 +18,7 @@ export default async function MouvementsPage() {
       .limit(500),
     supabase
       .from('produits')
-      .select('id, nom, unite, stock_actuel, stock_minimum')
+      .select('id, nom, unite, unite_uso, factor_uso, stock_actuel, stock_minimum')
       .eq('actif', true)
       .order('nom'),
   ])

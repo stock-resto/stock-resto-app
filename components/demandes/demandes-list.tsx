@@ -14,7 +14,7 @@ export type DemandeLigneRow = {
   produit_id: string
   quantite: number
   quantite_livree: number | null
-  produits: { nom: string; unite: string } | null
+  produits: { nom: string; unite: string; unite_uso: string | null; factor_uso: number | null } | null
 }
 
 export type DemandeRow = {

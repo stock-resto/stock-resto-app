@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from 'react'
 import { Icon } from '@/components/icon'
 import { money } from '@/lib/format'
+import { baseToUso, tieneUso } from '@/lib/units'
 import type { Produit } from '@/types/database'
 import { ProductoModal } from './producto-modal'
 
@@ -219,6 +220,11 @@ export function StockTable({
                             <em className="ml-0.5 not-italic text-[11px] text-muted-foreground/70">
                               {p.unite}
                             </em>
+                            {tieneUso(p) && (
+                              <span className="block font-sans text-[11px] font-normal text-muted-foreground/70">
+                                ≈ {baseToUso(p.stock_actuel, p.factor_uso)} {p.unite_uso}
+                              </span>
+                            )}
                           </span>
                           <StockBar p={p} status={status} />
                         </div>

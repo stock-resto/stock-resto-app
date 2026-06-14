@@ -4,6 +4,7 @@ import { useEffect, useCallback, useState, useMemo } from 'react'
 import { useActionState } from 'react'
 import { Icon } from '@/components/icon'
 import { registrarSortida, type ProductoState } from '@/lib/stock/actions'
+import { toBase, tieneUso } from '@/lib/units'
 import type { ProductoOption } from './entrada-modal'
 
 type Props = {
@@ -22,6 +23,7 @@ function stockTone(p: ProductoOption): 'ok' | 'warn' | 'out' {
 export function SortieModal({ produits, onClose }: Props) {
   const [state, formAction, isPending] = useActionState(registrarSortida, INIT)
   const [quantities, setQuantities] = useState<Record<string, string>>({})
+  const [units, setUnits] = useState<Record<string, 'base' | 'uso'>>({})
   const [search, setSearch] = useState('')
 
   const filtered = useMemo(() => {
@@ -34,7 +36,13 @@ export function SortieModal({ produits, onClose }: Props) {
   const lignesJson = JSON.stringify(
     Object.entries(quantities)
       .filter(([, q]) => Number(q) > 0)
-      .map(([produit_id, q]) => ({ produit_id, quantite: Number(q) }))
+      .map(([produit_id, q]) => {
+        const p = produits.find((x) => x.id === produit_id)
+        return {
+          produit_id,
+          quantite: toBase(Number(q), units[produit_id] ?? 'base', p?.factor_uso ?? null),
+        }
+      })
   )
 
   useEffect(() => {
@@ -128,6 +136,8 @@ export function SortieModal({ produits, onClose }: Props) {
                       ? 'text-[var(--warn)]'
                       : 'text-muted-foreground'
 
+                const unit = units[p.id] ?? 'base'
+                const conUso = tieneUso(p)
                 return (
                   <div
                     key={p.id}
@@ -140,19 +150,39 @@ export function SortieModal({ produits, onClose }: Props) {
                     <span className={`w-28 text-right font-mono text-[13px] font-medium ${stockCls}`}>
                       {p.stock_actuel} {p.unite}
                     </span>
-                    <div className="flex w-28 items-center justify-end gap-1.5">
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={qty}
-                        onChange={(e) =>
-                          setQuantities((prev) => ({ ...prev, [p.id]: e.target.value }))
-                        }
-                        placeholder="—"
-                        className="h-8 w-20 rounded-lg border border-border bg-background px-2 text-right text-sm font-mono outline-none focus:border-ring transition"
-                      />
-                      <span className="text-[11px] text-muted-foreground/70">{p.unite}</span>
+                    <div className="flex w-32 flex-col items-end gap-0.5">
+                      <div className="flex items-center gap-1.5">
+                        <input
+                          type="number"
+                          min="0"
+                          step="0.01"
+                          value={qty}
+                          onChange={(e) =>
+                            setQuantities((prev) => ({ ...prev, [p.id]: e.target.value }))
+                          }
+                          placeholder="—"
+                          className="h-8 w-20 rounded-lg border border-border bg-background px-2 text-right text-sm font-mono outline-none focus:border-ring transition"
+                        />
+                        {conUso ? (
+                          <button
+                            type="button"
+                            onClick={() =>
+                              setUnits((prev) => ({ ...prev, [p.id]: unit === 'uso' ? 'base' : 'uso' }))
+                            }
+                            className="min-w-[42px] rounded-md border border-border px-1.5 py-1 text-[11px] font-medium text-muted-foreground transition hover:bg-secondary hover:text-foreground"
+                            title="Cambiar unidad"
+                          >
+                            {unit === 'uso' ? p.unite_uso : p.unite}
+                          </button>
+                        ) : (
+                          <span className="min-w-[42px] text-[11px] text-muted-foreground/70">{p.unite}</span>
+                        )}
+                      </div>
+                      {conUso && unit === 'uso' && hasQty && (
+                        <span className="text-[10px] text-muted-foreground/60">
+                          = {toBase(Number(qty), 'uso', p.factor_uso)} {p.unite}
+                        </span>
+                      )}
                     </div>
                   </div>
                 )

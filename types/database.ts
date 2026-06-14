@@ -101,6 +101,8 @@ export interface Database {
           unite: string
           unite_achat: string | null
           factor_achat: number | null
+          unite_uso: string | null
+          factor_uso: number | null
           stock_actuel: number
           stock_minimum: number
           stock_maximum: number | null
@@ -119,6 +121,8 @@ export interface Database {
           unite?: string
           unite_achat?: string | null
           factor_achat?: number | null
+          unite_uso?: string | null
+          factor_uso?: number | null
           stock_actuel?: number
           stock_minimum?: number
           stock_maximum?: number | null
@@ -135,6 +139,8 @@ export interface Database {
           unite?: string
           unite_achat?: string | null
           factor_achat?: number | null
+          unite_uso?: string | null
+          factor_uso?: number | null
           stock_actuel?: number
           stock_minimum?: number
           stock_maximum?: number | null

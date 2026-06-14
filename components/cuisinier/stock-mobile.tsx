@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from 'react'
 import { Icon } from '@/components/icon'
+import { baseToUso, tieneUso } from '@/lib/units'
 import type { ProduitRow } from '@/components/stock/stock-table'
 
 type Status = 'ok' | 'low' | 'out'
@@ -123,6 +124,11 @@ export function StockMobile({
                   <em className="ml-0.5 text-[11px] font-medium not-italic text-muted-foreground/70">
                     {p.unite}
                   </em>
+                  {tieneUso(p) && (
+                    <span className="block font-sans text-[11px] font-medium text-muted-foreground/70">
+                      ≈ {baseToUso(p.stock_actuel, p.factor_uso)} {p.unite_uso}
+                    </span>
+                  )}
                 </span>
                 <span
                   className={

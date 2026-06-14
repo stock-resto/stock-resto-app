@@ -70,19 +70,25 @@ export async function upsertProducto(
   )
   if (four.error) return { error: four.error }
 
-  // Unité d'achat optionnelle (Modèle A) : vide => produit mono-unité.
+  // Présentations optionnelles : vide => produit mono-unité. Les facteurs sont
+  // en unité de base (mesure) : nb d'unités de base dans 1 présentation.
   const uniteAchat = String(formData.get('unite_achat') ?? '').trim() || null
-  const factorRaw = Number(formData.get('factor_achat'))
-  const factorAchat = uniteAchat && factorRaw > 0 ? factorRaw : null
+  const factorAchatRaw = Number(formData.get('factor_achat'))
+  const factorAchat = uniteAchat && factorAchatRaw > 0 ? factorAchatRaw : null
+
+  const uniteUso = String(formData.get('unite_uso') ?? '').trim() || null
+  const factorUsoRaw = Number(formData.get('factor_uso'))
+  const factorUso = uniteUso && factorUsoRaw > 0 ? factorUsoRaw : null
 
   const payload = {
     categorie_id: cat.id,
     fournisseur_id: four.id,
     nom,
-    presentation: (formData.get('presentation') as string) || null,
     unite,
     unite_achat: uniteAchat,
     factor_achat: factorAchat,
+    unite_uso: uniteUso,
+    factor_uso: factorUso,
     stock_minimum: Number(formData.get('stock_minimum') ?? 0),
     stock_maximum: formData.get('stock_maximum') ? Number(formData.get('stock_maximum')) : null,
     valeur_unitaire: Number(formData.get('valeur_unitaire') ?? 0),
